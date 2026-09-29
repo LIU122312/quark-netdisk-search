@@ -122,8 +122,12 @@ let libCache = null;
 
 const GAMES_INDEX = path.join(LIB_DIR, 'games.json');
 
+let libCacheT = 0, gamesMtime = -1;
+function gamesStat() { try { return fs.statSync(GAMES_INDEX).mtimeMs; } catch (e) { return 0; } }
 function loadLib() {
-  if (libCache) return libCache;
+  /* games.json 是增量抓取出来的，变了就自动重建索引（最多 30 秒一次） */
+  const gm = gamesStat();
+  if (libCache && gm === gamesMtime && (Date.now() - libCacheT) < 30000) return libCache;
   try {
     const j = JSON.parse(fs.readFileSync(LIB_INDEX, 'utf8'));
     const items = Array.isArray(j.items) ? j.items : [];
@@ -139,6 +143,8 @@ function loadLib() {
       }
     } catch (e) { /* 没有 games.json 就只用原库 */ }
     libCache = { meta, items };
+    libCacheT = Date.now();
+    gamesMtime = gm;
   } catch (e) {
     libCache = { meta: { error: String(e.message) }, items: [] };
   }
@@ -373,7 +379,7 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://localhost');
 
   if (u.pathname === '/api/library/reload') {
-    libCache = null;
+    libCache = null; libCacheT = 0; gamesMtime = -1;
     const l = loadLib();
     return sendJson(res, { code: 0, reloaded: true, indexed: l.items.length, meta: l.meta });
   }

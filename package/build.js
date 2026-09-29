@@ -44,7 +44,9 @@ copy(NODEEXE, path.join(PKG, 'runtime', 'node.exe'));
 copy(path.join(ROOT, 'README.md'), path.join(PKG, 'README.md'));
 copy(path.join(ROOT, 'THIRD-PARTY.md'), path.join(PKG, '第三方说明.md'));
 
-const zip = path.join(OUT, NAME + '-win64.zip');
+/* 压缩包用 ASCII 名（README 里写的、Releases 上的都是这个名），解压出来的目录保持中文 */
+const ZIPNAME = 'quark-netdisk-search-' + VER + '-win64.zip';
+const zip = path.join(OUT, ZIPNAME);
 if (fs.existsSync(zip)) fs.unlinkSync(zip);
 cp.execFileSync('powershell', ['-NoProfile', '-Command',
   'Compress-Archive -Path "' + PKG + '" -DestinationPath "' + zip + '" -CompressionLevel Optimal -Force'], { stdio: 'inherit' });

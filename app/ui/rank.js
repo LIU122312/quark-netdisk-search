@@ -725,7 +725,9 @@ async function getFiltered(cat, srcId, regions, genres, page, limit, refresh, bo
   const gk = genres.join(',');
   const key = 'pool:' + cat + ':' + src.id + '|' + rk + '|' + gk;
 
-  const rec = refresh ? null : cacheGet(key, TTL_POOL);
+  /* 本地游戏库还在增量抓取，用短 TTL 让它跟着涨 */
+  const ttl = src.kind === 'localGame' ? 60000 : TTL_POOL;
+  const rec = refresh ? null : cacheGet(key, ttl);
   let pool, cached = !!rec, stale = false, errMsg = '';
   if (rec) {
     pool = rec.v;

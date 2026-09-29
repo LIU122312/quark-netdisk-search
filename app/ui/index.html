@@ -95,6 +95,10 @@
   .qbox .ico { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px;
     fill:none; stroke:var(--fg3); stroke-width:2; stroke-linecap:round; pointer-events:none; }
   .qbox input { padding:8px 11px 8px 32px; font-size:13px; }
+  .sortbox { flex:0 0 auto; }
+  .sortbox select { background:var(--panel); border:1px solid var(--line2); color:var(--fg); border-radius:10px;
+    padding:9px 10px; font-family:inherit; font-size:13px; cursor:pointer; }
+  .sortbox select:hover { border-color:#33455f; }
   .list { display:grid; grid-template-columns:repeat(auto-fill,minmax(430px,1fr)); gap:12px; }
   .card { position:relative; background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
     padding:14px 16px; display:flex; flex-direction:column; gap:10px; transition:border-color .15s,transform .12s,box-shadow .15s; }
@@ -216,6 +220,26 @@
   .racts button { padding:5px 10px; font-size:11.5px; border-radius:7px; }
   .racts a { color:var(--acc2); font-size:11.5px; text-decoration:none; margin-left:auto; white-space:nowrap; }
   .racts a:hover { text-decoration:underline; }
+  /* 悬停 5 秒的倒计时环 */
+  .rtimer { position:absolute; left:6px; bottom:6px; width:26px; height:26px; opacity:0; transition:opacity .15s; }
+  .rcard.hovering .rtimer { opacity:1; }
+  .rtimer circle { fill:none; stroke-width:2.5; }
+  .rtimer .bg { stroke:rgba(255,255,255,.22); }
+  .rtimer .fg { stroke:#7fb0ff; stroke-linecap:round; stroke-dasharray:62.8; stroke-dashoffset:62.8;
+    transform:rotate(-90deg); transform-origin:50% 50%; }
+  .rcard.hovering .rtimer .fg { animation:rfill 5s linear forwards; }
+  @keyframes rfill { to { stroke-dashoffset:0; } }
+  /* 悬停 5 秒后弹出的作品详情 */
+  .rtip { position:fixed; z-index:70; width:min(340px,46vw); background:#151a22; border:1px solid var(--line2);
+    border-radius:12px; padding:12px 13px; box-shadow:0 18px 46px rgba(0,0,0,.55); pointer-events:none;
+    opacity:0; transition:opacity .16s; }
+  .rtip.on { opacity:1; }
+  .rtip .tt { font-size:14px; font-weight:600; color:var(--fg); line-height:1.45; }
+  .rtip .ta { font-size:12px; color:var(--fg3); font-weight:400; }
+  .rtip .tm { font-size:12px; color:var(--fg3); margin-top:5px; }
+  .rtip .ts { font-size:12px; color:#9fc2ff; margin-top:5px; }
+  .rtip .td { font-size:12.5px; color:var(--fg2); line-height:1.7; margin-top:8px; max-height:168px; overflow:hidden; }
+  .rtip .th { font-size:11.5px; color:var(--fg3); margin-top:9px; padding-top:8px; border-top:1px solid var(--line); }
   .sheet-foot { display:flex; justify-content:center; margin-top:22px; }
   .chip { background:var(--panel2); border:1px solid var(--line); color:var(--fg2); border-radius:999px;
     padding:7px 16px; font-size:13px; cursor:pointer; transition:all .15s; }
@@ -264,6 +288,7 @@
       <div class="ogroup">
         <span class="olabel">范围</span>
         <label><input type="checkbox" id="onlyLocal"> 只看本地精选 <b id="nLocal"></b></label>
+        <label><input type="checkbox" id="onlyGame"> 只看方舟游戏库（本地游戏）</label>
         <label><input type="checkbox" id="onlyHeji"> 只看合集 / 全集</label>
         <label><input type="checkbox" id="exPreview"> 去掉小说 / 漫画 / 软件 / 预告</label>
         <label><input type="checkbox" id="ex4k"> 只要 4K</label>
@@ -292,6 +317,14 @@
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M6 12h12M10 18h4"></path></svg>
       <input type="text" id="quick" placeholder="结果内筛选：杜比 / 国配 / 1080P">
     </div>
+    <label class="sortbox" title="结果排序方式（失效链接始终沉底）"><select id="sortSel">
+      <option value="rel">综合排序</option>
+      <option value="corr">相关性（匹配度优先）</option>
+      <option value="new">时间 新 → 旧</option>
+      <option value="old">时间 旧 → 新</option>
+      <option value="name">名称 A → Z</option>
+      <option value="src">来源（本地优先）</option>
+    </select></label>
   </div>
   <div id="list" class="list"></div>
   <section id="rank" hidden>
@@ -412,13 +445,14 @@
     </div>
   </section>
 </main>
+<div class="rtip" id="rtip" aria-hidden="true"></div>
 <script>
 
 const $ = (id) => document.getElementById(id);
 const HEJI = /合集|全集|全季|合辑|系列/;
 const JUNK = /\.txt|\.mobi|\.epub|\.pdf|小说|电子书|有声|广播剧|漫画|模拟器|软件|apk|安装包|全本|TXT全文|TXT下载|预告|花絮|解说|ost|原声|主题曲/i;
 const PROV = { quark:'夸克', ali:'阿里', baidu:'百度', '115':'115', tianyi:'天翼', '123':'123', pikpak:'PikPak', other:'网盘' };
-const PREFS = { onlyLocal:0, onlyHeji:0, exPreview:1, ex4k:0, incSd:0, incAr:1, incAll:0, useQuark:1, autoCheck:1, onlyValid:0 };
+const PREFS = { onlyLocal:0, onlyGame:0, onlyHeji:0, exPreview:1, ex4k:0, incSd:0, incAr:1, incAll:0, useQuark:1, autoCheck:1, onlyValid:0 };
 
 /* ===================== 设置（常用项，存 localStorage） ===================== */
 const SET_DEF = { useLib:1, useOnline:1, variants:1, libLimit:800, onlineLimit:800, autoCheckN:120, batch:40, rankLimit:24, rememberKw:0 };
@@ -432,7 +466,14 @@ const SET = (function () {
   return o;
 })();
 function setSave(k, v) { SET[k] = v; try { localStorage.setItem('qs4_' + k, String(v)); } catch (e) {} }
-function setReset() { for (const k in SET_DEF) { SET[k] = SET_DEF[k]; try { localStorage.removeItem('qs4_' + k); } catch (e) {} } }
+function setReset() {
+  for (const k in SET_DEF) { SET[k] = SET_DEF[k]; try { localStorage.removeItem('qs4_' + k); } catch (e) {} }
+  try {
+    localStorage.removeItem('qs4_sort');
+    const s0 = document.getElementById('sortSel');
+    if (s0) s0.value = 'rel';
+  } catch (e) {}
+}
 
 
 let rows = [];
@@ -440,6 +481,9 @@ let vmap = {};
 let cardEls = [];
 let seq = 0;
 let busyGen = -1;
+
+/* 方舟游戏库条目：本地索引里分类为「方舟游戏」 */
+function isGameRow(r) { return !!r.local && /方舟游戏/.test(r.source || ''); }
 
 function isShortDrama(s) {
   s = String(s || '');
@@ -525,11 +569,37 @@ function render() {
     if ($('exPreview').checked && JUNK.test(r.note || '')) continue;
     if ($('ex4k').checked && !/4k/i.test(r.note || '')) continue;
     if ($('onlyLocal').checked && !r.local) continue;
+    if ($('onlyGame').checked && !isGameRow(r)) continue;
     if (onlyValid && vmap[r.url] === 0) continue;
     view.push(r);
   }
+  /* 排序：失效链接一律沉底，其余按所选方式 */
+  const mode = ($('sortSel') && $('sortSel').value) || 'rel';
+  const kwn = ($('kw') && $('kw').value ? $('kw').value : '').trim();
+  /* 相关性：本地 + 在线一起按「标题与关键词的匹配度」排（与在线排序同一套打分） */
+  const relOf = (r) => {
+    if (r._rel === undefined) r._rel = (typeof r.rel === 'number' ? r.rel : onlineScore(r.note, kwn));
+    return r._rel;
+  };
+  /* 未知时间（含后端零值时间 0001-01-01）算 0，两个方向都沉底 */
+  const byTime = (d) => { const t = ts(d); return t < 315532800000 ? 0 : t; };
+  const CMP = {
+    rel: (a, b) => a[1] - b[1],
+    corr: (a, b) => (relOf(b[0]) - relOf(a[0])) || ((b[0].local ? 1 : 0) - (a[0].local ? 1 : 0)) || (a[1] - b[1]),
+    new: (a, b) => (byTime(b[0].datetime) - byTime(a[0].datetime)) || (a[1] - b[1]),
+    old: (a, b) => {
+      const x = byTime(a[0].datetime), y = byTime(b[0].datetime);
+      if (!x || !y) return (!x && !y) ? (a[1] - b[1]) : (x ? -1 : 1);
+      return (x - y) || (a[1] - b[1]);
+    },
+    name: (a, b) => String(a[0].note || '').localeCompare(String(b[0].note || ''), 'zh') || (a[1] - b[1]),
+    src: (a, b) => ((b[0].local ? 1 : 0) - (a[0].local ? 1 : 0)) ||
+      String(a[0].source || '').localeCompare(String(b[0].source || ''), 'zh') || (a[1] - b[1]),
+  };
+  const cmp = CMP[mode] || CMP.rel;
+  const deadOf = (r) => (vmap[r.url] === 0 ? 1 : 0);
   const idx = view.map((r, i) => [r, i]);
-  idx.sort((a, b) => ((vmap[a[0].url] === 0 ? 1 : 0) - (vmap[b[0].url] === 0 ? 1 : 0)) || (a[1] - b[1]));
+  idx.sort((a, b) => (deadOf(a[0]) - deadOf(b[0])) || cmp(a, b));
   view = idx.map(x => x[0]);
 
   cardEls = [];
@@ -715,10 +785,24 @@ document.addEventListener('click', (e) => {
 $('go').onclick = search;
 $('clear').onclick = () => { $('kw').value = ''; $('quick').value = ''; rows = []; cardEls = []; vmap = {}; $('list').innerHTML = ''; $('meta').textContent = '已清空。'; };
 $('kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
-['onlyLocal', 'onlyHeji', 'exPreview', 'ex4k', 'incSd', 'onlyValid'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); if (rows.length) render(); }));
+['onlyLocal', 'onlyGame', 'onlyHeji', 'exPreview', 'ex4k', 'incSd', 'onlyValid'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); if (rows.length) render(); }));
 ['incAr', 'incAll'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); if (rows.length) search(); }));
 $('autoCheck').addEventListener('change', () => { savePrefs(); if ($('autoCheck').checked && rows.length) verify(false); });
 $('quick').addEventListener('input', () => { if (rows.length) render(); });
+/* 结果排序：选择记在 localStorage（qs4_sort），下次搜索自动沿用 */
+$('sortSel').addEventListener('change', function () {
+  try { localStorage.setItem('qs4_sort', this.value); } catch (e) {}
+  if (rows.length) render();
+});
+(function () {
+  try {
+    const v = localStorage.getItem('qs4_sort');
+    if (v && $('sortSel').querySelector('option[value="' + v + '"]')) $('sortSel').value = v;
+  } catch (e) {}
+  const sel = $('sortSel').value;
+  $('sortSel').title = '结果排序方式（失效链接始终沉底）：当前 ' + $('sortSel').options[$('sortSel').selectedIndex].textContent;
+  void sel;
+})();
 $('checkAll').onclick = () => { if (rows.length) verify(true); };
 
 /* ===================== 排行榜（Bangumi 动画 + 豆瓣 电影/剧集） ===================== */
@@ -784,7 +868,10 @@ function rankTabs() {
     "</div></div>";
   if (cur.board) {
     sel.regions = []; sel.genres = [];
-    const boards = info.boards || [];
+    const allBoards = info.boards || [];
+    /* 每个来源只显示属于自己的榜单：带 src 标记的归对应来源，「固定榜单」保留无标记的 */
+    const mine = allBoards.filter(function (x) { return x.src ? x.src === cur.id : cur.id === "board"; });
+    const boards = mine.length ? mine : allBoards;
     if (!RANK.board || !boards.some(function (x) { return x.id === RANK.board; })) RANK.board = boards.length ? boards[0].id : "";
     box.innerHTML = srcRow + boardsHtml(boards);
     return;
@@ -808,6 +895,7 @@ function rankCard(it) {
       (img ? '<img loading="lazy" src="' + img + '" alt="">' : '<div class="rnoimg">无封面</div>') +
       '<span class="rrank">' + it.rank + "</span>" +
       (it.score ? '<span class="rscore">' + it.score + "</span>" : "") +
+      '<svg class="rtimer" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" cx="13" cy="13" r="10"></circle></svg>'
     "</div>" +
     '<div class="rtitle" title="' + escapeHtml(it.title + (it.alt ? " / " + it.alt : "")) + '">' + q + "</div>" +
     '<div class="rsub">' + escapeHtml([it.year, it.extra, it.src].filter(Boolean).join(" · ")) + "</div>" +
@@ -816,9 +904,74 @@ function rankCard(it) {
   "</div>";
 }
 
+/* ---------- 排行卡片：悬停 5 秒弹出作品详情 ---------- */
+const HOVER_MS = 5000;
+let hoverCard = null, hoverTimer = null;
+function rankTipHide() {
+  if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+  if (hoverCard) hoverCard.classList.remove("hovering");
+  hoverCard = null;
+  const tip = $("rtip");
+  if (tip) { tip.classList.remove("on"); tip.__for = null; tip.innerHTML = ""; }
+}
+function rankTipHtml(it) {
+  const meta = [it.src, it.year, it.extra].filter(Boolean).join(" · ");
+  const stat = [];
+  if (it.rank) stat.push("名次 " + it.rank);
+  if (it.score) stat.push("评分 " + it.score);
+  if (it.votes) stat.push((it.votes >= 10000 ? (it.votes / 10000).toFixed(1) + " 万" : it.votes) + " 人评");
+  let h = '<div class="tt">' + escapeHtml(it.title) + (it.alt ? ' <span class="ta">' + escapeHtml(it.alt) + "</span>" : "") + "</div>";
+  if (meta) h += '<div class="tm">' + escapeHtml(meta) + "</div>";
+  if (stat.length) h += '<div class="ts">' + escapeHtml(stat.join(" · ")) + "</div>";
+  const d = String(it.desc || "").replace(/\s+/g, " ").trim();
+  if (d) h += '<div class="td">' + escapeHtml(d.slice(0, 240)) + (d.length > 240 ? "…" : "") + "</div>";
+  h += '<div class="th">点封面或「搜资源」直接去搜网盘资源</div>';
+  return h;
+}
+function rankTipPlace(tip, x, y) {
+  const w = tip.offsetWidth || 340, h = tip.offsetHeight || 200;
+  let left = x + 16, top = y - 24;
+  if (left + w > window.innerWidth - 12) left = Math.max(12, x - w - 16);
+  if (top + h > window.innerHeight - 12) top = Math.max(12, window.innerHeight - h - 12);
+  if (top < 12) top = 12;
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+}
+(function () {
+  const grid = $("rankGrid"), tip = $("rtip");
+  if (!grid || !tip) return;
+  grid.addEventListener("mouseover", function (e) {
+    const c = e.target.closest && e.target.closest(".rcard");
+    if (!c) { rankTipHide(); return; }
+    if (c === hoverCard) {
+      if (tip.__for === c) rankTipPlace(tip, e.clientX, e.clientY);
+      return;
+    }
+    rankTipHide();
+    if (!c.__item) return;
+    hoverCard = c;
+    c.classList.add("hovering");
+    hoverTimer = setTimeout(function () {
+      hoverTimer = null;
+      if (hoverCard !== c) return;
+      tip.innerHTML = rankTipHtml(c.__item);
+      tip.__for = c;
+      tip.classList.add("on");
+      const r = c.getBoundingClientRect();
+      rankTipPlace(tip, r.right, r.top + 46);
+    }, HOVER_MS);
+  });
+  grid.addEventListener("mousemove", function (e) {
+    if (tip.__for && tip.__for === hoverCard) rankTipPlace(tip, e.clientX, e.clientY);
+  });
+  grid.addEventListener("mouseleave", function () { rankTipHide(); });
+  const rk = $("rank");
+  if (rk) rk.addEventListener("scroll", function () { rankTipHide(); }, true);
+})();
+
 async function loadRank(append) {
   const my = ++RANK.gen;
-  if (!append) { RANK.page = 1; RANK.n = 0; $("rankGrid").innerHTML = ""; }
+  if (!append) { RANK.page = 1; RANK.n = 0; RANK.items = []; $("rankGrid").innerHTML = ""; rankTipHide(); }
   $("rankInfo").textContent = append ? "加载中..." : "正在抓取（首次可能要十几秒）...";
   try {
     const info = (RANK.cats || {})[RANK.cat] || {};
@@ -843,6 +996,12 @@ async function loadRank(append) {
     RANK.hasMore = !!r.hasMore;
     RANK.n += r.items.length;
     $("rankGrid").innerHTML += r.items.map(rankCard).join("") || '<div class="empty">没有匹配结果，试试减少筛选条件。</div>';
+    RANK.items = (RANK.items || []).concat(r.items);
+    /* 卡片与数据一一对应，悬停时才拿得到简介等信息 */
+    (function () {
+      const cs = $("rankGrid").querySelectorAll(".rcard");
+      for (let i = 0; i < cs.length; i++) if (RANK.items[i]) cs[i].__item = RANK.items[i];
+    })();
     const age = r.cached ? (Math.round(r.ageMs / 60000) + " 分钟前缓存") : "刚刚抓取";
     const via = r.via === "proxy" ? "・经 Clash 代理" : (r.via === "local" ? "・本地离线库" : "・直连");
     let head, tail;
@@ -871,7 +1030,7 @@ async function toggleRank(force) {
   box.hidden = !show;
   document.body.classList.toggle("rank-open", show);
   $("rankBtn").textContent = show ? "收起排行榜" : "排行榜";
-  if (!show) return;
+  if (!show) { rankTipHide(); return; }
   await loadRankCats();
   if (!RANK.cats[RANK.cat]) RANK.cat = "anime";
   rankTabs();

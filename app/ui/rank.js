@@ -7,6 +7,10 @@
      游戏·Bangumi  POST api.bgm.tv/v0/search/subjects  （type=4 游戏）
      游戏·方舟游戏  lib/games.json（本地离线库，条目自带夸克链接）
      电影/剧集     豆瓣 m.douban.com/rexxar subject_collection（固定榜单）
+     音乐·网易云   music.163.com/api/playlist/detail（63 个官方榜，含热歌/飙升/新歌/原创）
+     游戏·Steam    steam250.com（Top250/最多游玩/隐藏佳作/年度榜，条目带 Steam 商店链接）
+     游戏·TapTap   taptap.cn/webapiv2/app-top/v2/hits（热门/热玩/热卖/预约/新品/独家/分类）
+     网文·起点     m.qidian.com/webcommon/rank/<type>list（男频 9 榜 + 女频 3 榜，需 csrf token）
    缓存：lib/rank-cache.json
    ======================================================== */
 const https = require('https');
@@ -78,6 +82,7 @@ const SRC_DEF = {
   ],
   /* ---- 网文 ---- */
   webfiction: [
+    { id: 'qidian', name: '起点', tip: '起点中文网官方榜：畅销/月票/推荐/阅读/书友/更新/新书/签约/新人 + 女频月票·收藏·免费', regions: [], genres: [], kind: 'board' },
     { id: 'db', name: '豆瓣图书', tip: WEB_TIP, regions: [], genres: WEB_G, kind: 'dbBook', defaultTags: WEB_DEFAULT_TAGS },
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: WEB_BGM_G, kind: 'bgmType', typeId: 1, baseTags: ['轻小说'] },
     { id: 'board', name: '固定榜单', tip: '图书Top250 / 热门图书', kind: 'board' },
@@ -96,16 +101,18 @@ const SRC_DEF = {
   ],
   /* ---- 音乐 ---- */
   music: [
+    { id: 'netease', name: '网易云', tip: '网易云音乐官方榜：官方/潮流/风格/ACG/语种/会员/海外，共 35 个榜', regions: [], genres: [], kind: 'board' },
     { id: 'bgm', name: 'Bangumi', tip: MUSIC_TIP, regions: [], genres: MUSIC_G, kind: 'bgmType', typeId: 3 },
     { id: 'board', name: '固定榜单', tip: '豆瓣热门音乐', kind: 'board' },
   ],
   /* ---- 游戏 ---- */
   game: [
-    { id: 'local', name: '方舟游戏', tip: LOCAL_GAME_TIP, regions: [], genres: [], kind: 'localGame', maxPages: 300, local: true },
+    { id: 'steam', name: 'Steam', tip: 'Steam 榜：Top250 / 最多游玩 / 隐藏佳作 / 年度榜（数据经 steam250 镜像，含 Steam 商店链接）', regions: [], genres: [], kind: 'board' },
+    { id: 'taptap', name: 'TapTap', tip: 'TapTap 手游榜：热门/热玩/热卖/预约/新品/独家 + 7 个分类榜', regions: [], genres: [], kind: 'board' },
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: GAME_BGM_G, kind: 'bgmType', typeId: 4 },
   ],
 };
-const CAT_SRC = { anime: 'bgm', movie: 'db', tv: 'db', webfiction: 'db', litfic: 'db', comic: 'db', music: 'bgm', game: 'local' };
+const CAT_SRC = { anime: 'bgm', movie: 'db', tv: 'db', webfiction: 'qidian', litfic: 'db', comic: 'db', music: 'netease', game: 'steam' };
 const WEST = ['美国', '英国', '法国', '德国', '意大利', '西班牙', '加拿大', '澳大利亚', '新西兰', '爱尔兰', '瑞典', '丹麦', '挪威', '芬兰', '荷兰', '比利时', '奥地利', '瑞士', '俄罗斯', '波兰', '捷克', '冰岛', '墨西哥', '巴西', '阿根廷', '南非'];
 
 /* ============ 电影/剧集：豆瓣固定榜单 ============ */
@@ -127,8 +134,20 @@ const BOARDS = {
     { group: '分类', id: 'db_tv_variety', name: '综艺', kind: 'douban', slug: 'tv_variety_show', ttl: TTL_DB },
   ],
   webfiction: [
-    { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
-    { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_hotsales', name: '畅销榜', kind: 'qidian', type: 'hotsales', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_yuepiao', name: '月票榜', kind: 'qidian', type: 'yuepiao', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_reclist', name: '推荐榜', kind: 'qidian', type: 'reclist', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_readindex', name: '阅读榜', kind: 'qidian', type: 'readindex', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_newfans', name: '书友榜', kind: 'qidian', type: 'newfans', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_update', name: '更新榜', kind: 'qidian', type: 'update', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_newbook', name: '新书榜', kind: 'qidian', type: 'newbook', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_sign', name: '签约榜', kind: 'qidian', type: 'sign', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_newauthor', name: '新人榜', kind: 'qidian', type: 'newauthor', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·女频', id: 'qd_f_yuepiao', name: '月票榜', kind: 'qidian', type: 'yuepiao', gender: 'female', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·女频', id: 'qd_f_collect', name: '收藏榜', kind: 'qidian', type: 'collect', gender: 'female', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·女频', id: 'qd_f_free', name: '免费榜', kind: 'qidian', type: 'free', gender: 'female', src: 'qidian', ttl: TTL_DB },
+    { group: '豆瓣图书', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
+    { group: '豆瓣图书', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
   ],
   litfic: [
     { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
@@ -139,15 +158,71 @@ const BOARDS = {
     { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
   ],
   music: [
-    { group: '榜单', id: 'db_music_hot', name: '热门音乐', kind: 'doubanMusic', slug: 'music_hot', ttl: TTL_DB },
+    { group: '网易云·官方', id: 'ne_hot', name: '热歌榜', kind: 'netease', listId: 3778678, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·官方', id: 'ne_up', name: '飙升榜', kind: 'netease', listId: 19723756, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·官方', id: 'ne_new', name: '新歌榜', kind: 'netease', listId: 3779629, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·官方', id: 'ne_orig', name: '原创榜', kind: 'netease', listId: 2884035, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·潮流', id: 'ne_potential', name: '潜力爆款榜', kind: 'netease', listId: 5338990334, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·潮流', id: 'ne_trend', name: '潮流风向榜', kind: 'netease', listId: 13372522766, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·潮流', id: 'ne_realtime', name: '实时热度榜', kind: 'netease', listId: 8246775932, src: 'netease', ttl: 3 * 3600e3 },
+    { group: '网易云·潮流', id: 'ne_share', name: '实时分享榜', kind: 'netease', listId: 18176153161, src: 'netease', ttl: 3 * 3600e3 },
+    { group: '网易云·潮流', id: 'ne_web', name: '网络热歌榜', kind: 'netease', listId: 6723173524, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_guofeng', name: '国风榜', kind: 'netease', listId: 5059642708, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_folk', name: '民谣榜', kind: 'netease', listId: 5059661515, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_rock', name: '摇滚榜', kind: 'netease', listId: 5059633707, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_dance', name: '电音榜', kind: 'netease', listId: 1978921795, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_classic', name: '古典榜', kind: 'netease', listId: 71384707, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_rapcn', name: '中文说唱榜', kind: 'netease', listId: 991319590, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_rapworld', name: '全球说唱榜', kind: 'netease', listId: 14028249541, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·风格', id: 'ne_rnb', name: '欧美 R&B 榜', kind: 'netease', listId: 12225155968, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·ACG', id: 'ne_acg', name: 'ACG 榜', kind: 'netease', listId: 71385702, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·ACG', id: 'ne_acg_anime', name: 'ACG 动画榜', kind: 'netease', listId: 3001835560, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·ACG', id: 'ne_acg_game', name: 'ACG 游戏榜', kind: 'netease', listId: 3001795926, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·ACG', id: 'ne_acg_vocaloid', name: 'VOCALOID 榜', kind: 'netease', listId: 3001890046, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_jp', name: '日语榜', kind: 'netease', listId: 5059644681, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_kr', name: '韩语榜', kind: 'netease', listId: 745956260, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_us_hot', name: '欧美热歌榜', kind: 'netease', listId: 2809513713, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_us_new', name: '欧美新歌榜', kind: 'netease', listId: 2809577409, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_ru', name: '俄语榜', kind: 'netease', listId: 6732051320, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_th', name: '泰语榜', kind: 'netease', listId: 7095271308, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·语种', id: 'ne_vn', name: '越南语榜', kind: 'netease', listId: 6732014811, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·会员', id: 'ne_vip_love', name: '黑胶 VIP 爱听榜', kind: 'netease', listId: 5453912201, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·会员', id: 'ne_vip_hot', name: '黑胶 VIP 热歌榜', kind: 'netease', listId: 7785066739, src: 'netease', ttl: TTL_DB },
+    { group: '网易云·会员', id: 'ne_vip_new', name: '黑胶 VIP 新歌榜', kind: 'netease', listId: 7785123708, src: 'netease', ttl: TTL_DB },
+    { group: '海外榜', id: 'ne_billboard', name: '美国 Billboard', kind: 'netease', listId: 60198, src: 'netease', ttl: TTL_DB },
+    { group: '海外榜', id: 'ne_uk', name: 'UK 周榜', kind: 'netease', listId: 180106, src: 'netease', ttl: TTL_DB },
+    { group: '海外榜', id: 'ne_oricon', name: '日本 Oricon 榜', kind: 'netease', listId: 60131, src: 'netease', ttl: TTL_DB },
+    { group: '海外榜', id: 'ne_beatport', name: 'Beatport 电音榜', kind: 'netease', listId: 3812895, src: 'netease', ttl: TTL_DB },
+    { group: '豆瓣', id: 'db_music_hot', name: '热门音乐', kind: 'doubanMusic', slug: 'music_hot', ttl: TTL_DB },
   ],
-  game: [],
+  game: [
+    { group: 'Steam·神作', id: 'st_top250', name: 'Top250', kind: 'steam250', slug: 'top250', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·神作', id: 'st_played', name: '最多游玩', kind: 'steam250', slug: 'most_played', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·神作', id: 'st_gems', name: '隐藏佳作', kind: 'steam250', slug: 'hidden_gems', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·年度', id: 'st_2025', name: '2025', kind: 'steam250', slug: '2025', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·年度', id: 'st_2024', name: '2024', kind: 'steam250', slug: '2024', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·年度', id: 'st_2023', name: '2023', kind: 'steam250', slug: '2023', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'Steam·年度', id: 'st_2022', name: '2022', kind: 'steam250', slug: '2022', src: 'steam', ttl: 24 * 3600e3 },
+    { group: 'TapTap·总榜', id: 'tt_hot', name: '热门榜', kind: 'taptap', typeName: 'hot', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·总榜', id: 'tt_pop', name: '热玩榜', kind: 'taptap', typeName: 'pop', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·总榜', id: 'tt_sell', name: '热卖榜', kind: 'taptap', typeName: 'sell', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·总榜', id: 'tt_reserve', name: '预约榜', kind: 'taptap', typeName: 'reserve', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·总榜', id: 'tt_new', name: '新品榜', kind: 'taptap', typeName: 'new', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·总榜', id: 'tt_exclusive', name: '独家榜', kind: 'taptap', typeName: 'exclusive', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_action', name: '动作', kind: 'taptap', typeName: 'action', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_strategy', name: '策略', kind: 'taptap', typeName: 'strategy', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_idle', name: '放置', kind: 'taptap', typeName: 'idle', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_single', name: '单机', kind: 'taptap', typeName: 'single', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_casual', name: '休闲', kind: 'taptap', typeName: 'casual', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_manage', name: '模拟经营', kind: 'taptap', typeName: 'management', platform: 'android', src: 'taptap', ttl: TTL_DB },
+    { group: 'TapTap·分类', id: 'tt_unriddle', name: '解谜', kind: 'taptap', typeName: 'unriddle', platform: 'android', src: 'taptap', ttl: TTL_DB },
+  ],
 };
 
 const CAT_NAME = { anime: '动漫', movie: '电影', tv: '剧集', webfiction: '网文', litfic: '传统文学', comic: '漫画', music: '音乐', game: '游戏' };
 
 /* ---------- HTTP：直连优先，失败回退 Clash HTTP CONNECT 代理 ---------- */
-function reqDirect(url, headers, timeoutMs, asBuffer, body) {
+function reqDirect(url, headers, timeoutMs, asBuffer, body, full) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const h = Object.assign({}, headers);
@@ -158,7 +233,8 @@ function reqDirect(url, headers, timeoutMs, asBuffer, body) {
       r.on('end', () => {
         const buf = Buffer.concat(chunks);
         if (r.statusCode !== 200) return reject(new Error('HTTP ' + r.statusCode));
-        resolve(asBuffer ? buf : buf.toString('utf8'));
+        const out = asBuffer ? buf : buf.toString('utf8');
+        resolve(full ? { body: out, headers: r.headers, status: r.statusCode } : out);
       });
     });
     req.setTimeout(timeoutMs, () => { req.destroy(new Error('timeout')); });
@@ -186,7 +262,7 @@ function connectViaProxy(host, port) {
   });
 }
 
-async function reqViaProxy(url, headers, timeoutMs, asBuffer, body) {
+async function reqViaProxy(url, headers, timeoutMs, asBuffer, body, full) {
   const u = new URL(url);
   const raw = await connectViaProxy(u.hostname, 443);
   const tlsSock = tls.connect({ socket: raw, servername: u.hostname });
@@ -208,7 +284,8 @@ async function reqViaProxy(url, headers, timeoutMs, asBuffer, body) {
         tlsSock.destroy();
         if (r.statusCode !== 200) return reject(new Error('HTTP ' + r.statusCode));
         const buf = Buffer.concat(chunks);
-        resolve(asBuffer ? buf : buf.toString('utf8'));
+        const out = asBuffer ? buf : buf.toString('utf8');
+        resolve(full ? { body: out, headers: r.headers, status: r.statusCode } : out);
       });
     });
     req.setTimeout(timeoutMs, () => { tlsSock.destroy(); req.destroy(new Error('timeout')); });
@@ -233,6 +310,23 @@ async function getText(url, headers, timeoutMs, body) {
       const b = await reqViaProxy(url, headers, t, false, body);
       proxySticky.add(dom);
       return { body: b, via: 'proxy' };
+    } catch (e2) {
+      throw new Error('direct(' + e1.message + ') / proxy(' + e2.message + ')');
+    }
+  }
+}
+
+async function getRaw(url, headers, timeoutMs, body) {
+  const t = timeoutMs || 15000;
+  const dom = domOf(new URL(url).hostname);
+  if (proxySticky.has(dom)) return await reqViaProxy(url, headers, t, false, body, true);
+  try {
+    return await reqDirect(url, headers, Math.min(t, 4000), false, body, true);
+  } catch (e1) {
+    try {
+      const r = await reqViaProxy(url, headers, t, false, body, true);
+      proxySticky.add(dom);
+      return r;
     } catch (e2) {
       throw new Error('direct(' + e1.message + ') / proxy(' + e2.message + ')');
     }
@@ -580,7 +674,7 @@ function cats() {
       filter: true,
       defaultSrc: CAT_SRC[c],
       srcs: SRC_DEF[c].map((x) => ({ id: x.id, name: x.name, tip: x.tip || '', regions: x.regions || [], genres: x.kind === 'localGame' ? localGenreTags() : (x.genres || []), board: x.kind === 'board' })),
-      boards: (BOARDS[c] || []).map((b) => ({ id: b.id, name: b.name, group: b.group || '', desc: b.desc || '' })),
+      boards: (BOARDS[c] || []).map((b) => ({ id: b.id, name: b.name, group: b.group || '', desc: b.desc || '', src: b.src || '' })),
     };
   }
   return out;
@@ -779,11 +873,15 @@ async function getRank(cat, boardId, page, limit, refresh) {
   }
   try {
     const v = await once(key, async () => {
-      const r = board.kind === 'doubanBook'
-        ? await fetchDbBookCollection(board.slug, (pg - 1) * fetchLim, fetchLim)
-        : (board.kind === 'doubanMusic'
-          ? await fetchDbMusicCollection(board.slug, (pg - 1) * fetchLim, fetchLim)
-          : await fetchDouban(board, (pg - 1) * fetchLim, fetchLim));
+      const off = (pg - 1) * fetchLim;
+      let r;
+      if (board.kind === 'doubanBook') r = await fetchDbBookCollection(board.slug, off, fetchLim);
+      else if (board.kind === 'doubanMusic') r = await fetchDbMusicCollection(board.slug, off, fetchLim);
+      else if (board.kind === 'netease') r = await fetchNetease(board.listId, off, fetchLim);
+      else if (board.kind === 'steam250') r = await fetchSteam250(board.slug, off, fetchLim);
+      else if (board.kind === 'taptap') r = await fetchTaptap(board.typeName, board.platform, off, fetchLim);
+      else if (board.kind === 'qidian') r = await fetchQidian(board.type, board.gender, off, fetchLim);
+      else r = await fetchDouban(board, off, fetchLim);
       const out = {
         cat, catName: CAT_NAME[cat] || cat, board: board.id, boardName: board.name,
         group: board.group || '', page: pg, hasMore: r.hasMore, total: r.total, via: r.via,
@@ -800,9 +898,202 @@ async function getRank(cat, boardId, page, limit, refresh) {
   }
 }
 
+
+/* ===================== 音乐：网易云音乐官方榜（63 个官方榜） ===================== */
+const NE_HEADERS = { 'User-Agent': DB_UA, 'Referer': 'https://music.163.com/', 'Accept': 'application/json', 'Cookie': 'appver=8.9.70; os=pc' };
+const neHttps = (u) => String(u || '').replace(/^http:\/\//, 'https://');
+async function fetchNetease(listId, start, limit) {
+  const { o, via } = await getJson('https://music.163.com/api/playlist/detail?id=' + listId, NE_HEADERS, 25000);
+  const pl = o.result || o.playlist || {};
+  const tracks = Array.isArray(pl.tracks) ? pl.tracks : [];
+  if (!tracks.length) throw new Error('网易云榜单未返回曲目');
+  const items = tracks.map((t, i) => {
+    const album = t.album || t.al || {};
+    const artists = (t.artists || t.ar || []).map((a) => a.name).filter(Boolean).join(' / ');
+    return {
+      id: 'ne' + (t.id || i),
+      rank: i + 1,
+      title: t.name || '',
+      alt: artists,
+      year: '',
+      score: 0,
+      votes: 0,
+      cover: neHttps(album.picUrl),
+      url: 'https://music.163.com/#/song?id=' + t.id,
+      src: '网易云音乐',
+      urlText: '歌曲',
+      extra: [pl.name, album.name].filter(Boolean).join(' · '),
+    };
+  });
+  const total = items.length;
+  const slice = items.slice(start, start + limit);
+  return { items: slice, total, via, hasMore: start + slice.length < total };
+}
+
+/* ===================== 游戏：Steam 榜（steam250 镜像，含 Steam 商店链接） ===================== */
+function htmlDecode(s) {
+  return String(s == null ? '' : s)
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => { try { return String.fromCharCode(parseInt(h, 16)); } catch (e) { return m; } })
+    .replace(/&#(\d+);/g, (m, d) => { try { return String.fromCharCode(parseInt(d, 10)); } catch (e) { return m; } })
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+}
+function steamImg(u) {
+  let s = String(u || '').trim();
+  if (!s) return '';
+  if (s.slice(0, 2) === '//') s = 'https:' + s;
+  return s.replace('shared.cloudflare.steamstatic.com', 'shared.steamstatic.com').replace(/(\/store_item_assets[^ ]*?)\/{2,}/, '$1/');
+}
+async function fetchSteam250(slug, start, limit) {
+  const r = await getText('https://steam250.com/' + slug, { 'User-Agent': DB_UA, 'Accept': 'text/html' }, 25000);
+  const chunks = r.body.split(/<div id=\d+>/).slice(1);
+  const items = [];
+  chunks.forEach((c) => {
+    const app = (c.match(/club\.steam250\.com\/app\/(\d+)/) || [])[1] || '';
+    const tm = c.match(/<div class=title>[\s\S]*?<a href=https:\/\/club\.steam250\.com\/app\/\d+[^>]*>([^<]*)<\/a>/) || c.match(/title="([^"]*)"/);
+    const title = htmlDecode(tm ? tm[1] : '');
+    if (!title) return;
+    const rank = parseInt((c.match(/<div class=rank>\s*(\d+)/) || [])[1], 10) || (items.length + 1);
+    const img = (c.match(/data-src=([^\s>]+)/) || [])[1] || '';
+    const score = parseFloat((c.match(/class="score stat"><span>([\d.]+)/) || [])[1]) || 0;
+    const votes = parseInt((((c.match(/class=votes>([\d,]+)/) || [])[1]) || '').replace(/,/g, ''), 10) || 0;
+    const year = ((c.match(/<a href=\/(\d{4})>/) || [])[1]) || '';
+    const tag = htmlDecode((c.match(/class="g3 tag"[^>]*>([^<]*)</) || [])[1] || '');
+    items.push({
+      id: 'st' + (app || rank), rank, title, alt: '', year, score, votes,
+      cover: steamImg(img),
+      url: app ? 'https://store.steampowered.com/app/' + app + '/' : '',
+      src: 'Steam', urlText: 'Steam 商店', extra: tag,
+    });
+  });
+  if (!items.length) throw new Error('steam250 榜单解析失败');
+  const slice = items.slice(start, start + limit);
+  return { items: slice, total: items.length, via: r.via, hasMore: start + slice.length < items.length };
+}
+
+/* ===================== 游戏：TapTap 手游榜 ===================== */
+const TT_XUA = 'V=1&PN=WebApp&LANG=zh_CN&VN_CODE=104&LOC=CN&PLT=PC&DS=Android&UID=0';
+const TT_MAX = 150;
+async function fetchTaptap(typeName, platform, start, limit) {
+  const need = Math.min(start + limit, TT_MAX);
+  const jobs = [];
+  for (let from = 0; from < need; from += 10) {
+    const q = (platform ? 'platform=' + platform + '&' : '') + 'type_name=' + typeName + '&from=' + from + '&limit=10';
+    jobs.push(getJson('https://www.taptap.cn/webapiv2/app-top/v2/hits?' + q,
+      { 'User-Agent': DB_UA, 'X-UA': TT_XUA, 'Accept': 'application/json', 'Referer': 'https://www.taptap.cn/top/download' }, 20000).catch(() => null));
+  }
+  const res = await Promise.all(jobs);
+  const items = [];
+  let via = 'direct', rawTotal = 0;
+  res.forEach((r) => {
+    if (!r) return;
+    via = r.via || via;
+    const d = r.o.data || {};
+    if (d.total) rawTotal = Math.max(rawTotal, d.total);
+    (d.list || []).forEach((x) => {
+      const a = x.app || {};
+      if (!a.id || x.is_ad) return;
+      const st = a.stat || {};
+      items.push({
+        id: 'tt' + a.id,
+        rank: items.length + 1,
+        title: a.title || '',
+        alt: '',
+        year: '',
+        score: parseFloat((st.rating && st.rating.score) || 0) || 0,
+        votes: st.review_count || 0,
+        cover: (a.icon && (a.icon.original_url || a.icon.url)) || '',
+        url: 'https://www.taptap.cn/app/' + a.id,
+        src: 'TapTap',
+        urlText: 'TapTap',
+        extra: (a.tags || []).slice(0, 3).map((t) => t.value).filter(Boolean).join('/'),
+        desc: a.rec_text || (typeof a.description === 'string' ? a.description : '') || '',
+      });
+    });
+  });
+  if (!items.length) throw new Error('TapTap 榜单未返回数据');
+  const total = Math.min(rawTotal || items.length, TT_MAX);
+  const slice = items.slice(start, start + limit);
+  return { items: slice, total, via, hasMore: start + slice.length < total };
+}
+
+/* ===================== 网文：起点中文网官方榜（男频/女频） ===================== */
+const QD_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+const QD_MAX = 200;
+let qdTok = { v: '', t: 0 };
+async function qidianToken(force) {
+  if (!force && qdTok.v && Date.now() - qdTok.t < 1800e3) return qdTok.v;
+  const r = await getRaw('https://m.qidian.com/rank/hotsales', { 'User-Agent': QD_UA, 'Accept': 'text/html' }, 20000);
+  const setC = [].concat(r.headers['set-cookie'] || []).join(';');
+  const m = setC.match(/_csrfToken=([^;]+)/);
+  if (!m) throw new Error('起点未下发 csrf token');
+  qdTok = { v: m[1], t: Date.now() };
+  return qdTok.v;
+}
+async function qidianPage(type, gender, page, tok) {
+  const url = 'https://m.qidian.com/webcommon/rank/' + type + 'list?gender=' + (gender || 'male') + '&pageNum=' + page + '&_csrfToken=' + tok;
+  return getJson(url, { 'User-Agent': QD_UA, 'Accept': 'application/json', 'Referer': 'https://m.qidian.com/rank/' + type, 'Cookie': '_csrfToken=' + tok }, 20000);
+}
+async function fetchQidian(type, gender, start, limit) {
+  const size = 20;
+  const need = Math.min(start + limit, QD_MAX);
+  const from = Math.min(start, QD_MAX - size);
+  const pages = [];
+  for (let p = Math.floor(from / size) + 1; (p - 1) * size < need; p++) pages.push(p);
+  async function run(tok) {
+    const res = await Promise.all(pages.map((p) => qidianPage(type, gender, p, tok).catch(() => null)));
+    const recs = [];
+    let via = 'direct', total = 0;
+    res.forEach((r) => {
+      if (!r) return;
+      via = r.via || via;
+      const d = r.o.data || {};
+      if (d.total) total = Math.max(total, d.total);
+      (d.records || []).forEach((x) => recs.push(x));
+    });
+    return { recs, via, total };
+  }
+  let tok = await qidianToken(false);
+  let out = await run(tok);
+  if (!out.recs.length) {                       // token 可能过期，刷新一次
+    tok = await qidianToken(true);
+    out = await run(tok);
+  }
+  if (!out.recs.length) throw new Error('起点榜单未返回数据');
+  const items = out.recs.map((x) => {
+    const bid = String(x.bid || '');
+    return {
+      id: 'qd' + bid,
+      rank: x.rankNum || 0,
+      title: x.bName || '',
+      alt: x.subCat || '',
+      year: '',
+      score: 0,
+      votes: 0,
+      cover: bid ? 'https://bookcover.yuewen.com/qdbimg/349573/' + bid + '/600' : '',
+      url: bid ? 'https://www.qidian.com/book/' + bid + '/?from=rank' : '',
+      src: '起点',
+      urlText: '起点',
+      extra: [x.bAuth, x.cat, x.cnt].filter(Boolean).join(' · '),
+      desc: x.desc || '',
+    };
+  });
+  const total = Math.min(out.total || items.length, QD_MAX);
+  const keep = items.filter((it) => it.rank >= start + 1 && it.rank <= start + limit);
+  return { items: keep.length ? keep : items.slice(0, limit), total, via: out.via, hasMore: start + limit < total };
+}
+
 /* ---------- 封面代理 ---------- */
-const COVER_HOSTS = /^(?:[a-z0-9-]+\.)?(bgm\.tv|doubanio\.com|fzyx\.top)$/i;
-const coverReferer = (h) => (h.endsWith('bgm.tv') ? 'https://bgm.tv/' : (h.endsWith('fzyx.top') ? 'https://www.fzgamer.com/' : 'https://movie.douban.com/'));
+const COVER_HOSTS = new RegExp('^(?:[a-z0-9-]+\\.)?(' + ['bgm\\.tv','doubanio\\.com','fzyx\\.top','yuewen\\.com','music\\.126\\.net','steamstatic\\.com','tapimg\\.com'].join('|') + ')$', 'i');
+const COVER_REF = [
+  ['bgm.tv', 'https://bgm.tv/'],
+  ['fzyx.top', 'https://www.fzgamer.com/'],
+  ['yuewen.com', 'https://m.qidian.com/'],
+  ['music.126.net', 'https://music.163.com/'],
+  ['steamstatic.com', 'https://steam250.com/'],
+  ['tapimg.com', 'https://www.taptap.cn/'],
+];
+const coverReferer = (h) => { for (let i = 0; i < COVER_REF.length; i++) { const k = COVER_REF[i][0]; if (h === k || h.slice(-(k.length + 1)) === '.' + k) return COVER_REF[i][1]; } return 'https://movie.douban.com/'; };
 const coverMem = new Map();
 const COVER_CAP = 400;
 

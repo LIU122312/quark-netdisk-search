@@ -357,6 +357,14 @@ async function search() {
     render();
     $('meta').innerHTML = '共 <b>' + rows.length + '</b> 条 ・ 用时 ' + elapsed + 's' +
       '<br>本地精选 <b>' + localRows.length + '</b> 条 ・ 在线 <b>' + onlineRows.length + '</b> 条' +
+      (function () {
+        const en = (pansou && pansou.data || {}).enhanced;
+        if (!en) return '';
+        const bits = [];
+        if (en.variants && en.variants.length) bits.push('近似词 <b>' + en.variants.map(escapeHtml).join(' / ') + '</b>');
+        if (en.extras && en.extras.length) bits.push('在线源 ' + en.extras.map(escapeHtml).join(' '));
+        return bits.length ? '<br>' + bits.join(' ・ ') : '';
+      })() +
       '<br>已排除：短剧 ' + hid.sd + ' 条、历史归档 ' + hid.ar + ' 条、非夸克网盘 ' + hid.prov + ' 条（可勾选放回）' +
       (onlineRows.length < 30 ? '<br><span class="bad">在线偏少</span>：多半是 TG 源没走通，换个能过 Telegram 的 Clash 节点会变多' : '');
     loadSrc();
@@ -403,7 +411,7 @@ function curSel() {
   return RANK.sel[RANK.cat];
 }
 let rankTimer = null;
-const RANK_CATS = [["anime", "动漫"], ["movie", "电影"], ["tv", "剧集"]];
+const RANK_CATS = [["anime", "动漫"], ["movie", "电影"], ["tv", "剧集"], ["novel", "小说"], ["game", "游戏"]];
 
 async function loadRankCats() {
   if (RANK.cats) return RANK.cats;
@@ -487,7 +495,7 @@ function rankCard(it) {
     '<div class="rtitle" title="' + escapeHtml(it.title + (it.alt ? " / " + it.alt : "")) + '">' + q + "</div>" +
     '<div class="rsub">' + escapeHtml([it.year, it.extra, it.src].filter(Boolean).join(" · ")) + "</div>" +
     '<div class="racts"><button data-rsearch="' + q + '">搜资源</button>' +
-      '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noreferrer">条目</a></div>' +
+      (it.url ? '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noreferrer">' + escapeHtml(it.urlText || "条目") + "</a>" : "") + '</div>' +
   "</div>";
 }
 
@@ -519,7 +527,7 @@ async function loadRank(append) {
     RANK.n += r.items.length;
     $("rankGrid").innerHTML += r.items.map(rankCard).join("") || '<div class="empty">没有匹配结果，试试减少筛选条件。</div>';
     const age = r.cached ? (Math.round(r.ageMs / 60000) + " 分钟前缓存") : "刚刚抓取";
-    const via = r.via === "proxy" ? "・经 Clash 代理" : "・直连";
+    const via = r.via === "proxy" ? "・经 Clash 代理" : (r.via === "local" ? "・本地离线库" : "・直连");
     let head, tail;
     if (r.src) {
       const f = [];
@@ -536,7 +544,7 @@ async function loadRank(append) {
     $("rankMore").style.display = RANK.hasMore ? "" : "none";
   } catch (e) {
     if (my !== RANK.gen) return;
-    $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（Bangumi 源需 Clash 代理可用）";
+    $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（Bangumi/豆瓣 源需 Clash 代理可用）";
   }
 }
 

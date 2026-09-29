@@ -29,7 +29,7 @@ if (fs.existsSync(PKG)) fs.rmSync(PKG, { recursive: true, force: true });
 mk(PKG);
 copy(PANSOU, path.join(PKG, 'app', 'pansou.exe'));
 ['server.js', 'rank.js', 'index.html'].forEach((f) => copy(path.join(ROOT, 'app', 'ui', f), path.join(PKG, 'app', 'ui', f)));
-['index.json', 'build-index.js'].forEach((f) => {
+['index.json', 'build-index.js', 'games.json', 'harvest-fzgamer.js'].forEach((f) => {
   const s = path.join(ROOT, 'app', 'lib', f);
   if (fs.existsSync(s)) copy(s, path.join(PKG, 'app', 'lib', f));
 });

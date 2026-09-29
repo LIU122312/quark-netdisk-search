@@ -9,6 +9,111 @@ const API_PORT = 8888;
 const ROOT = __dirname;
 const rank = require('./rank');
 
+/* ===================== 在线增强：近似词补搜 + 额外在线源 ===================== */
+/* EXTRA_SOURCES 形如 name|https://host/api/search|query ，多个用逗号分隔；留空即关闭 */
+const EXTRA_SOURCES = (process.env.EXTRA_SOURCES == null
+  ? 'pansou.de|https://pansou.de/api/search|query'
+  : process.env.EXTRA_SOURCES).split(',').map((x) => x.trim()).filter(Boolean).map((x) => {
+    const parts = x.split('|');
+    return { name: parts[0] || parts[1], url: parts[1], field: parts[2] || 'query' };
+  }).filter((x) => x.url);
+
+function postJson(u, body, timeout) {
+  return new Promise((resolve) => {
+    let t;
+    try { t = new URL(u); } catch (e) { return resolve(null); }
+    const mod = t.protocol === 'https:' ? https : http;
+    const data = Buffer.from(JSON.stringify(body), 'utf8');
+    const req = mod.request({
+      host: t.hostname, port: t.port || (t.protocol === 'https:' ? 443 : 80),
+      path: t.pathname + t.search,
+      method: 'POST', timeout,
+      headers: { 'content-type': 'application/json', 'content-length': data.length, 'user-agent': 'quark-search-ui', accept: 'application/json' },
+    }, (r) => {
+      let out = '';
+      r.on('data', (c) => out += c);
+      r.on('end', () => { try { resolve(JSON.parse(out)); } catch (e) { resolve(null); } });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.write(data);
+    req.end();
+  });
+}
+
+/* 片名近似写法：原名 -> 首个空格/波浪号前的部分 -> 再去掉「剧场版 / 第N季」这类后缀 */
+function queryVariants(kw) {
+  const out = [kw];
+  const base = String(kw).split(/[\s〜～]+/)[0].trim();
+  if (base.length >= 2 && out.indexOf(base) < 0) out.push(base);
+  const trimmed = base.replace(/(剧场版|电影版|特别篇|番外篇|OVA|OAD|TV版|第[一二三四五六七八九十0-9]+[季部])$/i, '').trim();
+  if (trimmed.length >= 2 && out.indexOf(trimmed) < 0) out.push(trimmed);
+  return out.slice(0, 3);
+}
+
+function pansouSearch(kw, extra) {
+  return new Promise((resolve) => {
+    const qs = new URLSearchParams(Object.assign({ kw }, extra || {}));
+    const req = http.request({ host: API_HOST, port: API_PORT, path: '/api/search?' + qs.toString(), method: 'GET', timeout: 180000 }, (r) => {
+      let out = '';
+      r.on('data', (c) => out += c);
+      r.on('end', () => { try { resolve(JSON.parse(out)); } catch (e) { resolve(null); } });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+async function handleSearchEnhanced(res, u) {
+  const kw = (u.searchParams.get('kw') || '').trim();
+  const pass = {};
+  for (const kv of u.searchParams.entries()) if (kv[0] !== 'kw') pass[kv[0]] = kv[1];
+  const plain = pass.plain === '1';
+  delete pass.plain;
+  const t0 = Date.now();
+
+  const primary = await pansouSearch(kw, pass);
+  const payload = primary || { code: 0, message: 'ok', data: {} };
+  const data = (payload.data = payload.data || {});
+  const merged = (data.merged_by_type = data.merged_by_type || {});
+  merged.quark = Array.isArray(merged.quark) ? merged.quark.slice() : [];
+  const seen = new Set(merged.quark.map((x) => x.url));
+
+  const variants = queryVariants(kw);
+  const used = [];
+  if (!plain && merged.quark.length < 5 && variants.length > 1) {
+    for (const v of variants.slice(1)) {
+      const r = await pansouSearch(v, pass);
+      const list = (r && r.data && r.data.merged_by_type && r.data.merged_by_type.quark) || [];
+      used.push(v);
+      for (const x of list) if (x.url && !seen.has(x.url)) { seen.add(x.url); x.variant = v; merged.quark.push(x); }
+    }
+  }
+
+  const ext = [];
+  if (!plain && EXTRA_SOURCES.length) {
+    const rs = await Promise.all(EXTRA_SOURCES.map((s) => postJson(s.url, { [s.field]: kw }, 20000)));
+    EXTRA_SOURCES.forEach((s, i) => {
+      const r = rs[i];
+      const list = (r && Array.isArray(r.results)) ? r.results : [];
+      let added = 0;
+      for (const x of list) {
+        if (!x || !x.url || !/quark\.cn/i.test(x.url) || seen.has(x.url)) continue;
+        seen.add(x.url);
+        merged.quark.push({ url: x.url, password: x.password || '', note: x.title || '', datetime: x.datetime || '', source: s.name + ':' + (x.source || '在线'), images: [] });
+        added++;
+      }
+      if (added) ext.push(s.name + '+' + added);
+    });
+  }
+
+  data.total = merged.quark.length;
+  data.enhanced = { variants: used, extras: ext, ms: Date.now() - t0 };
+  sendJson(res, payload);
+}
+
+
 /* ===================== 本地精选库索引 ===================== */
 const LIB_DIR = path.join(ROOT, '..', 'lib');
 const LIB_INDEX = path.join(LIB_DIR, 'index.json');
@@ -349,6 +454,8 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+
+  if (u.pathname === '/api/search' && req.method === 'GET') { handleSearchEnhanced(res, u); return; }
 
   if (req.url.startsWith('/api/')) return proxy(req, res);
 

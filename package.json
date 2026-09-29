@@ -1,6 +1,6 @@
 {
   "name": "quark-netdisk-search",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "private": true,
   "description": "只检索夸克网盘的本地资源检索台：TG 频道 + 插件聚合、本地精选库、链接判活、结果排序、动漫/影视/网文/图书/漫画/游戏/音乐多源榜单",
   "main": "app/ui/server.js",

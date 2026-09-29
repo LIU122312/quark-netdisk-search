@@ -4,3 +4,6 @@ node_modules/
 app/lib/rank-cache.json
 app/lib/check-cache.json
 app/cache/
+
+# 桌面外壳是编译产物（build.js 会用 Launcher.cs + webview2/ 现场编译）
+package/desktop/资源聚合.exe

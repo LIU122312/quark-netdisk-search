@@ -1,10 +1,11 @@
 @echo off
 setlocal
-title Quark Resource Search
+title 资源聚合 (browser mode)
 cd /d "%~dp0"
 call "%~dp0config.cmd"
 if not exist "%~dp0logs" mkdir "%~dp0logs"
 
+echo   资源聚合 - 浏览器模式（想用独立窗口请双击 资源聚合.exe）
 echo [1/3] PanSou API on port %PORT% ...
 tasklist /FI "IMAGENAME eq pansou.exe" 2>nul | find /i "pansou.exe" >nul
 if errorlevel 1 (

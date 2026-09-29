@@ -1,0 +1,6 @@
+dist/
+node_modules/
+*.log
+app/lib/rank-cache.json
+app/lib/check-cache.json
+app/cache/

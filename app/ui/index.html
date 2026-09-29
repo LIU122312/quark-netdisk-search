@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夸克资源检索</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif; background:#14161a; color:#e8eaed; }
+  header { padding:16px 22px 10px; background:#1b1e24; border-bottom:1px solid #2a2f38; position:sticky; top:0; z-index:5; }
+  h1 { margin:0 0 10px; font-size:17px; font-weight:600; letter-spacing:.5px; }
+  h1 span { color:#5b9cff; }
+  h1 i { float:right; font-style:normal; font-size:12px; color:#7f8896; font-weight:400; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  input[type=text] { background:#0f1115; border:1px solid #2f3641; color:#e8eaed; border-radius:8px; padding:9px 12px; font-size:14px; outline:none; }
+  #kw { flex:1 1 320px; min-width:200px; }
+  #kw:focus, #quick:focus { border-color:#5b9cff; }
+  button { background:#2b6cff; border:0; color:#fff; border-radius:8px; padding:9px 16px; font-size:14px; cursor:pointer; }
+  button.ghost { background:#252a33; color:#c9cfda; }
+  button.small { padding:5px 10px; font-size:12.5px; }
+  button:disabled { opacity:.55; cursor:default; }
+  .opts { margin-top:9px; font-size:12.8px; color:#9aa3b0; display:flex; gap:13px; flex-wrap:wrap; align-items:center; }
+  .opts label { cursor:pointer; user-select:none; white-space:nowrap; }
+  .opts b { color:#5b9cff; font-weight:600; }
+  .sep { width:1px; height:16px; background:#2f3641; }
+  #quick { flex:1 1 200px; padding:6px 10px; font-size:13px; }
+  .bar { height:3px; background:#22262e; margin-top:9px; border-radius:2px; overflow:hidden; display:none; }
+  .bar.on { display:block; }
+  .bar > i { display:block; height:100%; width:0; background:#5b9cff; transition:width .2s; }
+  main { padding:14px 22px 60px; }
+  .meta { color:#8b94a2; font-size:13px; margin-bottom:12px; line-height:1.75; }
+  .card { background:#1b1e24; border:1px solid #262b34; border-radius:10px; padding:11px 14px; margin-bottom:9px; }
+  .card:hover { border-color:#3a4553; }
+  .card.local { border-left:3px solid #2f7d4a; }
+  .card.dead { opacity:.5; }
+  .card.dead .title { text-decoration:line-through; }
+  .title { font-size:14.5px; line-height:1.5; word-break:break-all; margin-bottom:7px; }
+  .sub { font-size:12.5px; color:#7f8896; display:flex; gap:11px; flex-wrap:wrap; margin-bottom:9px; align-items:center; }
+  .link { color:#5b9cff; text-decoration:none; font-size:13px; word-break:break-all; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .actions button { padding:6px 11px; font-size:12.5px; }
+  .badge { background:#243042; color:#7fb2ff; border-radius:6px; padding:2px 7px; font-size:12px; }
+  .badge.lib { background:#1d3326; color:#7ddc9a; }
+  .badge.ar  { background:#2c2a22; color:#d8c07a; }
+  .badge.v-ok   { background:#17361f; color:#6ee08a; }
+  .badge.v-dead { background:#3a1d1d; color:#ff8a80; }
+  .badge.v-wait { background:#22262e; color:#6d7683; }
+  .ok { color:#5ad07a; } .bad { color:#ff8a80; }
+  /* ===== 排行榜 ===== */
+  .chip { background:#252a33; color:#c9cfda; border:0; border-radius:14px; padding:5px 12px; font-size:12.5px; cursor:pointer; }
+  .chip.on { background:#2b6cff; color:#fff; }
+  .chip.sm { padding:4px 10px; font-size:12px; border-radius:12px; background:#1f242c; }
+  .chip.sm.on { background:#31405c; color:#9dc0ff; }
+  .chip.clr { background:#3a2222; color:#ffb4a8; }
+  #rank { border:1px solid #262b34; border-radius:12px; padding:12px 14px; margin-bottom:16px; background:#181b21; }
+  #rank[hidden] { display:none; }
+  .rank-head { display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:9px; }
+  .rank-boards { display:flex; gap:7px; flex-wrap:wrap; }
+  .rgroup { display:flex; align-items:flex-start; gap:9px; margin-bottom:7px; }
+  .glabel { color:#6d7683; font-size:11.5px; flex:0 0 62px; padding-top:5px; text-align:right; }
+  .gchips { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+  .rank-info { color:#8b94a2; font-size:12.5px; margin:6px 0 12px; }
+  .rank-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:12px; }
+  .rcard { background:#1b1e24; border:1px solid #262b34; border-radius:9px; padding:7px; display:flex; flex-direction:column; }
+  .rcard:hover { border-color:#3a4553; }
+  .rposter { position:relative; aspect-ratio:2/3; border-radius:6px; overflow:hidden; background:#0f1115; cursor:pointer; }
+  .rposter img { width:100%; height:100%; object-fit:cover; display:block; }
+  .rnoimg { display:flex; align-items:center; justify-content:center; height:100%; color:#5a6371; font-size:12px; }
+  .rrank { position:absolute; top:5px; left:5px; background:rgba(20,22,26,.86); color:#ffd166; font-size:12px; font-weight:700; padding:1px 6px; border-radius:5px; }
+  .rscore { position:absolute; bottom:5px; right:5px; background:rgba(20,22,26,.86); color:#7ddc9a; font-size:12px; font-weight:600; padding:1px 6px; border-radius:5px; }
+  .rtitle { font-size:12.5px; line-height:1.4; margin:7px 0 3px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .rsub { font-size:11.5px; color:#7f8896; margin-bottom:7px; }
+  .racts { display:flex; gap:6px; align-items:center; margin-top:auto; }
+  .racts button { padding:4px 9px; font-size:11.5px; border-radius:6px; }
+  .racts a { color:#5b9cff; font-size:11.5px; text-decoration:none; }
+  .empty { color:#8b94a2; padding:24px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>夸克资源检索 <span>本地精选库 + PanSou</span><i id="src">源状态加载中...</i></h1>
+  <div class="row">
+    <input type="text" id="kw" placeholder="输入片名，回车搜索（例：庆余年、狂飙、繁花、宫崎骏）" autofocus>
+    <button id="go">搜索</button>
+    <button id="clear" class="ghost">清空</button>
+    <button id="rankBtn" class="ghost">排行榜</button>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="onlyLocal"> 只看本地精选 <b id="nLocal"></b></label>
+    <label><input type="checkbox" id="onlyHeji"> 只看合集/全集</label>
+    <label><input type="checkbox" id="exPreview"> 去掉小说/漫画/软件/预告</label>
+    <label><input type="checkbox" id="ex4k"> 只要 4K</label>
+    <label><input type="checkbox" id="incSd"> 含短剧</label>
+    <label><input type="checkbox" id="incAr" checked> 含历史归档</label>
+    <label><input type="checkbox" id="incAll"> 含阿里/百度</label>
+    <span class="sep"></span>
+    <label><input type="checkbox" id="useQuark" checked> 用夸克客户端打开</label>
+    <label><input type="checkbox" id="autoCheck" checked> 自动校验链接</label>
+    <label><input type="checkbox" id="onlyValid"> 仅显示有效</label>
+    <button id="checkAll" class="ghost small">校验全部</button>
+    <input type="text" id="quick" placeholder="结果内筛选，如 杜比/国配/1080/第二季">
+  </div>
+  <div class="bar" id="bar"><i id="pbar"></i></div>
+</header>
+<main>
+  <section id="rank" hidden>
+    <div class="rank-head"><div class="rank-boards" id="rankCats"></div></div>
+    <div id="rankBoards"></div>
+    <div class="rank-info" id="rankInfo">正在加载榜单...</div>
+    <div class="rank-grid" id="rankGrid"></div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button id="rankMore" class="ghost small">加载更多</button>
+      <button id="rankClose" class="ghost small">收起</button>
+    </div>
+  </section>
+  <div class="meta" id="meta">输入片名开始搜索。结果 = 本地精选库（人工整理、每日更新）+ 在线 PanSou（TG 频道与插件并发）。</div>
+  <div id="list"></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const HEJI = /合集|全集|全季|合辑|系列/;
+const JUNK = /\.txt|\.mobi|\.epub|\.pdf|小说|电子书|有声|广播剧|漫画|模拟器|软件|apk|安装包|全本|TXT全文|TXT下载|预告|花絮|解说|ost|原声|主题曲/i;
+const PROV = { quark:'夸克', ali:'阿里', baidu:'百度', '115':'115', tianyi:'天翼', '123':'123', pikpak:'PikPak', other:'网盘' };
+const PREFS = { onlyLocal:0, onlyHeji:0, exPreview:1, ex4k:0, incSd:0, incAr:1, incAll:0, useQuark:1, autoCheck:1, onlyValid:0 };
+
+let rows = [];
+let vmap = {};
+let cardEls = [];
+let seq = 0;
+let busyGen = -1;
+
+function isShortDrama(s) {
+  s = String(s || '');
+  if (/短剧/.test(s)) return true;
+  if (/有声小说|有声书|广播剧|听书|评书|相声|纪录片|公开课|讲座|课程|儿歌/.test(s)) return false;
+  const m = s.match(/[（(]\s*(?:全|共)?\s*(\d{2,4})\s*集/);
+  return !!(m && parseInt(m[1], 10) >= 50);
+}
+
+/* 在线结果相关性打分：标题越贴近关键词越靠前，长标题与噪音标题沉底 */
+function onlineScore(note, kw) {
+  const t = String(note || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const k = String(kw || '').trim().toLowerCase();
+  if (!k) return 0;
+  let s;
+  if (t === k) s = 1000;
+  else if (t.indexOf(k) === 0) s = 800;
+  else if (t.indexOf(k) >= 0) s = 460;
+  else s = 140;
+  s -= Math.min(Math.max(t.length - k.length, 0), 26) * 5;
+  if (/4k|2160p|蓝光|remux/i.test(t)) s += 45;
+  if (/合集|全集|完结|全\d+集/.test(t)) s += 30;
+  if (/豆瓣[789]\.\d/.test(t)) s += 25;
+  return s;
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function ts(s) { const d = new Date(s || 0); return isNaN(d) ? 0 : d.getTime(); }
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function loadPrefs() { for (const k in PREFS) { const v = localStorage.getItem('qs3_' + k); $(k).checked = v === null ? !!PREFS[k] : v === '1'; } }
+function savePrefs() { for (const k in PREFS) localStorage.setItem('qs3_' + k, $(k).checked ? '1' : '0'); }
+
+function cardHtml(r) {
+  const dead = vmap[r.url] === 0;
+  const b = [];
+  b.push('<span class="badge">' + escapeHtml(PROV[r.prov] || '网盘') + '</span>');
+  b.push(r.local ? '<span class="badge lib">本地精选</span>' : '<span class="badge">在线</span>');
+  if (r.ar) b.push('<span class="badge ar">历史归档</span>');
+  if (r.sd) b.push('<span class="badge ar">短剧</span>');
+  b.push('<span class="badge v-wait v"></span>');
+  return '<div class="card' + (r.local ? ' local' : '') + (dead ? ' dead' : '') + '">' +
+    '<div class="title">' + escapeHtml(r.note || '(无标题)') + '</div>' +
+    '<div class="sub">' + b.join('') +
+      (r.source ? '<span>' + escapeHtml(r.source) + '</span>' : '') +
+      (r.datetime ? '<span>' + fmtDate(r.datetime) + '</span>' : '') +
+      (r.password ? '<span>提取码 ' + escapeHtml(r.password) + '</span>' : '') +
+    '</div>' +
+    '<div class="actions">' +
+      '<a class="link" href="' + escapeHtml(r.url) + '" target="_blank" rel="noreferrer">' + escapeHtml(r.url) + '</a>' +
+      '<button data-copy="' + escapeHtml(r.url) + '">复制链接</button>' +
+      '<button class="ghost" data-open="' + escapeHtml(r.url) + '">打开并转存</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function paint(c) {
+  const v = vmap[c.url];
+  if (v === 1) { c.vEl.className = 'badge v-ok v'; c.vEl.textContent = '有效'; }
+  else if (v === 0) { c.vEl.className = 'badge v-dead v'; c.vEl.textContent = '已失效'; }
+  else if (v === -1) { c.vEl.className = 'badge v-wait v'; c.vEl.textContent = '需提取码/未校验'; }
+  else { c.vEl.className = 'badge v-wait v'; c.vEl.textContent = '未校验'; }
+  c.el.classList.toggle('dead', v === 0);
+}
+
+function render() {
+  const q = $('quick').value.trim().toLowerCase();
+  const incSd = $('incSd').checked;
+  const onlyValid = $('onlyValid').checked;
+  let view = [];
+  for (const r of rows) {
+    const t = (r.note || '').toLowerCase();
+    if (q && t.indexOf(q) < 0) continue;
+    if (!incSd && r.sd) continue;
+    if ($('onlyHeji').checked && !HEJI.test(r.note || '')) continue;
+    if ($('exPreview').checked && JUNK.test(r.note || '')) continue;
+    if ($('ex4k').checked && !/4k/i.test(r.note || '')) continue;
+    if ($('onlyLocal').checked && !r.local) continue;
+    if (onlyValid && vmap[r.url] === 0) continue;
+    view.push(r);
+  }
+  const idx = view.map((r, i) => [r, i]);
+  idx.sort((a, b) => ((vmap[a[0].url] === 0 ? 1 : 0) - (vmap[b[0].url] === 0 ? 1 : 0)) || (a[1] - b[1]));
+  view = idx.map(x => x[0]);
+
+  cardEls = [];
+  const list = $('list');
+  list.innerHTML = view.length ? view.map(cardHtml).join('') : '<div class="empty">没有匹配结果。</div>';
+  if (view.length) {
+    const els = list.querySelectorAll('.card');
+    for (let i = 0; i < els.length; i++) cardEls.push({ url: view[i].url, el: els[i], vEl: els[i].querySelector('.v') });
+    cardEls.forEach(paint);
+  }
+  updateMeta(view.length);
+}
+
+function updateMeta(shown) {
+  const localN = rows.filter(r => r.local).length;
+  const okN = rows.filter(r => vmap[r.url] === 1).length;
+  const deadN = rows.filter(r => vmap[r.url] === 0).length;
+  const waitN = rows.filter(r => vmap[r.url] === -1).length;
+  let h = '共 <b>' + rows.length + '</b> 条（本地精选 <b>' + localN + '</b> ・ 在线 <b>' + (rows.length - localN) + '</b>）';
+  if (shown !== null && shown !== undefined && shown !== rows.length) h += '，当前显示 <b>' + shown + '</b> 条';
+  h += '<br>链接校验（本机直连夸克接口实测）：' + ((okN + deadN + waitN) === 0
+    ? '尚未开始' : '<span class="ok">有效 ' + okN + '</span> ・ <span class="bad">已失效 ' + deadN + '</span> ・ 未校验 ' + waitN);
+  h += '<br>转存：点「打开并转存」→ 直接在夸克客户端里点「保存到我的网盘」';
+  $('meta').innerHTML = h;
+}
+
+async function verify(all) {
+  const my = seq;
+  if (busyGen === my) return;
+  const localN = rows.filter(r => r.local).length;
+  const ordered = rows.filter(r => r.local).concat(rows.filter(r => !r.local));
+  const cap = all ? ordered.length : Math.min(ordered.length, localN + 120);
+  const need = [];
+  const seen = {};
+  for (let i = 0; i < cap; i++) {
+    const r = ordered[i];
+    if (vmap[r.url] !== undefined || seen[r.url]) continue;
+    if (r.prov !== 'quark') { vmap[r.url] = -2; continue; }
+    seen[r.url] = 1;
+    need.push(r.url);
+  }
+  cardEls.forEach(paint);
+  if (!need.length) return;
+  busyGen = my;
+  $('bar').classList.add('on');
+  const BATCH = 40;
+  let done = 0;
+  try {
+    for (let i = 0; i < need.length; i += BATCH) {
+      if (my !== seq) return;
+      const chunk = need.slice(i, i + BATCH);
+      let res = {};
+      try {
+        const r = await fetch('/api/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urls: chunk }) }).then(x => x.json());
+        res = (r && r.results) || {};
+      } catch (e) { res = {}; }
+      for (const u of chunk) vmap[u] = (res[u] === undefined ? -1 : res[u]);
+      done += chunk.length;
+      $('pbar').style.width = Math.round(done * 100 / need.length) + '%';
+      cardEls.forEach(paint);
+      updateMeta(null);
+    }
+  } finally {
+    if (busyGen === my) busyGen = -1;
+    if (my === seq) { $('bar').classList.remove('on'); $('pbar').style.width = '0%'; render(); }
+  }
+}
+
+async function openLink(url, btn) {
+  const mode = $('useQuark').checked ? 'quark' : 'browser';
+  const old = btn.textContent;
+  btn.disabled = true;
+  let r = null;
+  try {
+    r = await fetch('/api/open', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, mode }) }).then(x => x.json());
+  } catch (e) { r = null; }
+  if (r && r.ok) {
+    btn.textContent = r.via === 'quark' ? '已交给夸克客户端' : (r.note || '已用默认浏览器打开');
+  } else {
+    btn.textContent = (r && r.error) ? '打开失败：' + r.error : '打开失败';
+  }
+  setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1800);
+}
+
+async function loadSrc() {
+  try {
+    const r = await Promise.all([
+      fetch('/api/health').then(x => x.json()).catch(() => ({})),
+      fetch('/api/library?kw=&limit=1').then(x => x.json()).catch(() => ({})),
+    ]);
+    const h = r[0] || {}, l = r[1] || {}, tg = h.tg || {};
+    $('src').innerHTML = '本地库 ' + (l.indexed || 0).toLocaleString() + ' 条 ・ 插件 ' + (h.plugin_count || 0) +
+      ' ・ 频道 ' + (h.channels_count || 0) + ' ・ TG ' + (tg.reachable ? '<span class="ok">可用</span>' : '<span class="bad">不可用</span>');
+  } catch (e) { $('src').textContent = '源状态不可用'; }
+}
+
+async function search() {
+  const kw = $('kw').value.trim();
+  if (!kw) return;
+  const my = ++seq;
+  const btn = $('go'); btn.disabled = true; btn.textContent = '搜索中...';
+  rows = []; vmap = {}; cardEls = []; busyGen = -1; $('bar').classList.remove('on');
+  $('list').innerHTML = '';
+  $('meta').textContent = '正在搜索（本地精选库 + TG 频道 + 插件）...';
+  const t0 = Date.now();
+  const enc = encodeURIComponent(kw);
+  const libUrl = '/api/library?kw=' + enc + '&limit=800&sc=' + ($('incSd').checked ? 1 : 0) +
+    '&ar=' + ($('incAr').checked ? 1 : 0) + ($('incAll').checked ? '&all=1' : '');
+  try {
+    const res = await Promise.all([
+      fetch('/api/search?kw=' + enc + '&cloud_types=quark').then(x => x.json()).catch(() => null),
+      fetch(libUrl).then(x => x.json()).catch(() => null),
+    ]);
+    if (my !== seq) return;
+    const pansou = res[0], lib = res[1];
+    const online = ((pansou && pansou.data || {}).merged_by_type || {}).quark || [];
+    const localAll = (lib && lib.items) || [];
+    const hid = (lib && lib.hidden) || { sd: 0, ar: 0, prov: 0 };
+    const seen = {};
+    online.forEach(x => { seen[x.url] = 1; });
+    const localRows = localAll.filter(x => !seen[x.u]).map(x => ({
+      url: x.u, note: x.n, source: '精选库·' + x.c, datetime: x.d, password: '',
+      local: true, prov: x.p, ar: x.ar, sd: x.sd,
+    }));
+    const onlineRows = online.map(x => ({
+      url: x.url, note: x.note, source: x.source, datetime: x.datetime, password: x.password,
+      local: false, prov: 'quark', ar: 0, sd: isShortDrama(x.note) ? 1 : 0,
+      rel: onlineScore(x.note, kw),
+    })).sort((a, b) => (b.rel - a.rel) || (ts(b.datetime) - ts(a.datetime)));
+    rows = localRows.concat(onlineRows);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    if (!rows.length) {
+      $('meta').innerHTML = '没有结果（用时 ' + elapsed + 's）。换个片名，或勾上「含短剧 / 含历史归档 / 含阿里百度」扩大范围。';
+      return 0;
+    }
+    render();
+    $('meta').innerHTML = '共 <b>' + rows.length + '</b> 条 ・ 用时 ' + elapsed + 's' +
+      '<br>本地精选 <b>' + localRows.length + '</b> 条 ・ 在线 <b>' + onlineRows.length + '</b> 条' +
+      '<br>已排除：短剧 ' + hid.sd + ' 条、历史归档 ' + hid.ar + ' 条、非夸克网盘 ' + hid.prov + ' 条（可勾选放回）' +
+      (onlineRows.length < 30 ? '<br><span class="bad">在线偏少</span>：多半是 TG 源没走通，换个能过 Telegram 的 Clash 节点会变多' : '');
+    loadSrc();
+    if ($('autoCheck').checked) verify(false);
+    return rows.length;
+  } catch (e) {
+    $('meta').innerHTML = '<span class="bad">搜索失败：' + escapeHtml(e.message) + '（确认 PanSou 服务已启动）</span>';
+    return 0;
+  } finally { btn.disabled = false; btn.textContent = '搜索'; }
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  const f1 = t.closest && t.closest("[data-fsrc]");
+  if (f1) { const s0 = curSel(); s0.src = f1.getAttribute("data-fsrc"); s0.regions = []; s0.genres = []; rankTabs(); rankReload(); return; }
+  const f2 = t.closest && t.closest("[data-fregion]");
+  if (f2) { tog(curSel().regions, f2.getAttribute("data-fregion")); rankTabs(); rankReload(); return; }
+  const f3 = t.closest && t.closest("[data-fgenre]");
+  if (f3) { tog(curSel().genres, f3.getAttribute("data-fgenre")); rankTabs(); rankReload(); return; }
+  if (t.closest && t.closest("[data-fclear]")) { const s0 = curSel(); s0.regions = []; s0.genres = []; rankTabs(); rankReload(); return; }
+  const rc = t.closest && t.closest("[data-rsearch]");
+  if (rc) { rankSearch(rc.getAttribute("data-rsearch")); return; }
+  const rcat = t.closest && t.closest("[data-rcat]");
+  if (rcat) { RANK.cat = rcat.getAttribute("data-rcat"); RANK.board = ""; RANK.page = 1; RANK.n = 0; rankTabs(); loadRank(false); return; }
+  const rb = t.closest && t.closest("[data-rboard]");
+  if (rb) { RANK.board = rb.getAttribute("data-rboard"); RANK.page = 1; RANK.n = 0; rankTabs(); loadRank(false); return; }
+  if (t.dataset && t.dataset.copy) { navigator.clipboard.writeText(t.dataset.copy).then(() => { t.textContent = '已复制'; setTimeout(() => t.textContent = '复制链接', 1200); }); }
+  if (t.dataset && t.dataset.open) { openLink(t.dataset.open, t); }
+});
+
+$('go').onclick = search;
+$('clear').onclick = () => { $('kw').value = ''; $('quick').value = ''; rows = []; cardEls = []; vmap = {}; $('list').innerHTML = ''; $('meta').textContent = '已清空。'; };
+$('kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+['onlyLocal', 'onlyHeji', 'exPreview', 'ex4k', 'incSd', 'onlyValid'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); if (rows.length) render(); }));
+['incAr', 'incAll'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); if (rows.length) search(); }));
+$('autoCheck').addEventListener('change', () => { savePrefs(); if ($('autoCheck').checked && rows.length) verify(false); });
+$('quick').addEventListener('input', () => { if (rows.length) render(); });
+$('checkAll').onclick = () => { if (rows.length) verify(true); };
+
+/* ===================== 排行榜（Bangumi 动画 + 豆瓣 电影/剧集） ===================== */
+const RANK = { cat: "anime", board: "", page: 1, hasMore: false, cats: null, n: 0, gen: 0, sel: {} };
+function curSel() {
+  if (!RANK.sel[RANK.cat]) RANK.sel[RANK.cat] = { src: "", regions: [], genres: [] };
+  return RANK.sel[RANK.cat];
+}
+let rankTimer = null;
+const RANK_CATS = [["anime", "动漫"], ["movie", "电影"], ["tv", "剧集"]];
+
+async function loadRankCats() {
+  if (RANK.cats) return RANK.cats;
+  const r = await fetch("/api/rank/cats").then(x => x.json()).catch(() => null);
+  RANK.cats = (r && r.cats) || {};
+  return RANK.cats;
+}
+
+function chipBtn(attr, val, label, on, title) {
+  return '<button class="chip sm' + (on ? " on" : "") + '" ' + attr + '="' + escapeHtml(val) + '"' +
+    (title ? ' title="' + escapeHtml(title) + '"' : "") + ">" + escapeHtml(label) + "</button>";
+}
+
+function rankReload() {
+  if (rankTimer) clearTimeout(rankTimer);
+  rankTimer = setTimeout(function () { rankTimer = null; loadRank(false); }, 300);
+}
+
+function tog(arr, v) { const i = arr.indexOf(v); if (i < 0) arr.push(v); else arr.splice(i, 1); }
+
+function boardsHtml(boards) {
+  const groups = [];
+  boards.forEach(function (x) {
+    const g = x.group || "";
+    let last = groups[groups.length - 1];
+    if (!last || last.name !== g) { last = { name: g, items: [] }; groups.push(last); }
+    last.items.push(x);
+  });
+  return groups.map(function (g) {
+    return '<div class="rgroup"><span class="glabel">' + escapeHtml(g.name) + '</span><div class="gchips">' +
+      g.items.map(function (x) { return chipBtn("data-rboard", x.id, x.name, RANK.board === x.id, x.desc); }).join("") +
+      "</div></div>";
+  }).join("");
+}
+
+function rankTabs() {
+  const c = RANK.cats || {};
+  $("rankCats").innerHTML = RANK_CATS.map(function (p) {
+    return '<button class="chip' + (RANK.cat === p[0] ? " on" : "") + '" data-rcat="' + p[0] + '">' + p[1] + "</button>";
+  }).join("");
+  const box = $("rankBoards");
+  const info = c[RANK.cat] || {};
+  const srcs = info.srcs || [];
+  if (!srcs.length) { box.innerHTML = ""; return; }
+  const sel = curSel();
+  if (!sel.src || !srcs.some(function (x) { return x.id === sel.src; })) sel.src = info.defaultSrc || srcs[0].id;
+  let cur = srcs[0];
+  srcs.forEach(function (x) { if (x.id === sel.src) cur = x; });
+  const dirty = (sel.regions.length || sel.genres.length) && !cur.board;
+  const srcRow = '<div class="rgroup"><span class="glabel">来源</span><div class="gchips">' +
+    srcs.map(function (x) { return chipBtn("data-fsrc", x.id, x.name, sel.src === x.id, x.tip); }).join("") +
+    (dirty ? '<button class="chip sm clr" data-fclear>清空筛选</button>' : "") +
+    "</div></div>";
+  if (cur.board) {
+    sel.regions = []; sel.genres = [];
+    const boards = info.boards || [];
+    if (!RANK.board || !boards.some(function (x) { return x.id === RANK.board; })) RANK.board = boards.length ? boards[0].id : "";
+    box.innerHTML = srcRow + boardsHtml(boards);
+    return;
+  }
+  const rnames = (cur.regions || []).map(function (r) { return typeof r === "string" ? r : r.n; });
+  const gnames = cur.genres || [];
+  sel.regions = sel.regions.filter(function (x) { return rnames.indexOf(x) >= 0; });
+  sel.genres = sel.genres.filter(function (x) { return gnames.indexOf(x) >= 0; });
+  box.innerHTML = srcRow +
+    (rnames.length ? '<div class="rgroup"><span class="glabel">产地</span><div class="gchips">' +
+      rnames.map(function (n) { return chipBtn("data-fregion", n, n, sel.regions.indexOf(n) >= 0); }).join("") + "</div></div>" : "") +
+    (gnames.length ? '<div class="rgroup"><span class="glabel">题材</span><div class="gchips">' +
+      gnames.map(function (n) { return chipBtn("data-fgenre", n, n, sel.genres.indexOf(n) >= 0); }).join("") + "</div></div>" : "");
+}
+
+function rankCard(it) {
+  const img = it.cover ? "/api/cover?u=" + encodeURIComponent(it.cover) : "";
+  const q = escapeHtml(it.title);
+  return '<div class="rcard">' +
+    '<div class="rposter" data-rsearch="' + q + '" title="点封面直接搜索网盘资源">' +
+      (img ? '<img loading="lazy" src="' + img + '" alt="">' : '<div class="rnoimg">无封面</div>') +
+      '<span class="rrank">' + it.rank + "</span>" +
+      (it.score ? '<span class="rscore">' + it.score + "</span>" : "") +
+    "</div>" +
+    '<div class="rtitle" title="' + escapeHtml(it.title + (it.alt ? " / " + it.alt : "")) + '">' + q + "</div>" +
+    '<div class="rsub">' + escapeHtml([it.year, it.extra, it.src].filter(Boolean).join(" · ")) + "</div>" +
+    '<div class="racts"><button data-rsearch="' + q + '">搜资源</button>' +
+      '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noreferrer">条目</a></div>' +
+  "</div>";
+}
+
+async function loadRank(append) {
+  const my = ++RANK.gen;
+  if (!append) { RANK.page = 1; RANK.n = 0; $("rankGrid").innerHTML = ""; }
+  $("rankInfo").textContent = append ? "加载中..." : "正在抓取（首次可能要十几秒）...";
+  try {
+    const info = (RANK.cats || {})[RANK.cat] || {};
+    const sel = curSel();
+    let cur = null;
+    (info.srcs || []).forEach(function (x) { if (x.id === sel.src) cur = x; });
+    let url;
+    if (info.filter && cur && !cur.board) {
+      url = "/api/rank?cat=" + encodeURIComponent(RANK.cat) + "&src=" + encodeURIComponent(sel.src) +
+        "&regions=" + encodeURIComponent(sel.regions.join(",")) +
+        "&genres=" + encodeURIComponent(sel.genres.join(",")) +
+        "&page=" + RANK.page + "&limit=24";
+    } else {
+      url = "/api/rank?cat=" + encodeURIComponent(RANK.cat) +
+        (RANK.board ? "&board=" + encodeURIComponent(RANK.board) : "") +
+        (info.filter ? "&src=board" : "") +
+        "&page=" + RANK.page + "&limit=24";
+    }
+    const r = await fetch(url).then(function (x) { return x.json(); });
+    if (my !== RANK.gen) return;
+    if (r.code !== 0) throw new Error(r.error || "抓取失败");
+    RANK.hasMore = !!r.hasMore;
+    RANK.n += r.items.length;
+    $("rankGrid").innerHTML += r.items.map(rankCard).join("") || '<div class="empty">没有匹配结果，试试减少筛选条件。</div>';
+    const age = r.cached ? (Math.round(r.ageMs / 60000) + " 分钟前缓存") : "刚刚抓取";
+    const via = r.via === "proxy" ? "・经 Clash 代理" : "・直连";
+    let head, tail;
+    if (r.src) {
+      const f = [];
+      if (r.regionNames && r.regionNames.length) f.push("产地 " + r.regionNames.join("+"));
+      if (r.genres && r.genres.length) f.push("题材 " + r.genres.join("+"));
+      head = escapeHtml(r.srcName) + via + " ・ " + (f.length ? f.join(" ・ ") : "不限");
+      tail = " ・ 命中 <b>" + r.filtered + "</b> 条 ・ 第 " + r.page + " 页 ・ " + age;
+    } else {
+      head = escapeHtml(r.boardName) + via + " ・ 第 " + r.page + " 页 ・ 共 <b>" + (r.total || 0) + "</b> 条 ・ " + age;
+      tail = "";
+    }
+    $("rankInfo").innerHTML = head + tail +
+      (r.stale ? ' <span class="bad">（刷新失败，显示旧缓存：' + escapeHtml(r.error || "") + "）</span>" : "");
+    $("rankMore").style.display = RANK.hasMore ? "" : "none";
+  } catch (e) {
+    if (my !== RANK.gen) return;
+    $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（Bangumi 源需 Clash 代理可用）";
+  }
+}
+
+async function toggleRank(force) {
+  const box = $("rank");
+  const show = (force === undefined) ? box.hidden : force;
+  box.hidden = !show;
+  $("rankBtn").textContent = show ? "收起排行榜" : "排行榜";
+  if (!show) return;
+  await loadRankCats();
+  if (!RANK.cats[RANK.cat]) RANK.cat = "anime";
+  rankTabs();
+  if (!RANK.n) loadRank(false);
+}
+
+function shortTitle(t) {
+  let s = String(t || "").trim().replace(/[（(][^）)]*[）)]/g, " ");
+  const cut = s.split(/[\s·・:：～~—–|]+/).filter(Boolean)[0];
+  return (cut || s).trim();
+}
+
+async function rankSearch(title) {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("kw").value = title;
+  const n = await search();
+  if (n === 0) {
+    const s = shortTitle(title);
+    if (s && s !== title) { $("kw").value = s; await search(); }
+  }
+}
+
+$("rankBtn").onclick = function () { toggleRank(); };
+$("rankClose").onclick = function () { toggleRank(false); };
+$("rankMore").onclick = function () { if (RANK.hasMore) { RANK.page++; loadRank(true); } };
+loadPrefs();
+loadSrc();
+async function rankHash() {
+  const h = location.hash || "";
+  if (h.indexOf("#rank") !== 0) return false;
+  let spec = h.slice(5).replace(/^[=\/]/, "");
+  try { spec = decodeURIComponent(spec); } catch (e) {}
+  await loadRankCats();
+  if (spec) {
+    const p = spec.split(":");
+    if (p[0] && RANK.cats[p[0]]) RANK.cat = p[0];
+    if (p[1]) {
+      const info = RANK.cats[RANK.cat] || {};
+      const known = (info.srcs || []).some(function (x) { return x.id === p[1]; });
+      if (known) curSel().src = p[1]; else RANK.board = p[1];
+    }
+  }
+  toggleRank(true);
+  return true;
+}
+rankHash();
+</script>
+</body>
+</html>

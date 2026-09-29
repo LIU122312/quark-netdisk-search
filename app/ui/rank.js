@@ -82,7 +82,7 @@ const SRC_DEF = {
   ],
   /* ---- 网文 ---- */
   webfiction: [
-    { id: 'qidian', name: '起点', tip: '起点中文网官方榜：畅销/月票/推荐/阅读/书友/更新/新书/签约/新人 + 女频月票·收藏·免费', regions: [], genres: [], kind: 'board' },
+    { id: 'qidian', name: '起点', tip: '起点中文网官方榜：男频 畅销/月票/推荐/书友/更新/新书/签约/新人 8 榜 + 女频 畅销/月票/收藏/免费 4 榜', regions: [], genres: [], kind: 'board' },
     { id: 'db', name: '豆瓣图书', tip: WEB_TIP, regions: [], genres: WEB_G, kind: 'dbBook', defaultTags: WEB_DEFAULT_TAGS },
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: WEB_BGM_G, kind: 'bgmType', typeId: 1, baseTags: ['轻小说'] },
     { id: 'board', name: '固定榜单', tip: '图书Top250 / 热门图书', kind: 'board' },
@@ -136,18 +136,18 @@ const BOARDS = {
   webfiction: [
     { group: '起点·男频', id: 'qd_hotsales', name: '畅销榜', kind: 'qidian', type: 'hotsales', gender: 'male', src: 'qidian', ttl: TTL_DB },
     { group: '起点·男频', id: 'qd_yuepiao', name: '月票榜', kind: 'qidian', type: 'yuepiao', gender: 'male', src: 'qidian', ttl: TTL_DB },
-    { group: '起点·男频', id: 'qd_reclist', name: '推荐榜', kind: 'qidian', type: 'reclist', gender: 'male', src: 'qidian', ttl: TTL_DB },
-    { group: '起点·男频', id: 'qd_readindex', name: '阅读榜', kind: 'qidian', type: 'readindex', gender: 'male', src: 'qidian', ttl: TTL_DB },
-    { group: '起点·男频', id: 'qd_newfans', name: '书友榜', kind: 'qidian', type: 'newfans', gender: 'male', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·男频', id: 'qd_reclist', name: '推荐榜', kind: 'qidian', type: 'rec', gender: 'male', src: 'qidian', ttl: TTL_DB },
+      { group: '起点·男频', id: 'qd_newfans', name: '书友榜', kind: 'qidian', type: 'newfans', gender: 'male', src: 'qidian', ttl: TTL_DB },
     { group: '起点·男频', id: 'qd_update', name: '更新榜', kind: 'qidian', type: 'update', gender: 'male', src: 'qidian', ttl: TTL_DB },
     { group: '起点·男频', id: 'qd_newbook', name: '新书榜', kind: 'qidian', type: 'newbook', gender: 'male', src: 'qidian', ttl: TTL_DB },
     { group: '起点·男频', id: 'qd_sign', name: '签约榜', kind: 'qidian', type: 'sign', gender: 'male', src: 'qidian', ttl: TTL_DB },
     { group: '起点·男频', id: 'qd_newauthor', name: '新人榜', kind: 'qidian', type: 'newauthor', gender: 'male', src: 'qidian', ttl: TTL_DB },
-    { group: '起点·女频', id: 'qd_f_yuepiao', name: '月票榜', kind: 'qidian', type: 'yuepiao', gender: 'female', src: 'qidian', ttl: TTL_DB },
+    { group: '起点·女频', id: 'qd_f_hotsales', name: '畅销榜', kind: 'qidian', type: 'hotsales', gender: 'female', src: 'qidian', ttl: TTL_DB },
+  { group: '起点·女频', id: 'qd_f_yuepiao', name: '月票榜', kind: 'qidian', type: 'yuepiao', gender: 'female', src: 'qidian', ttl: TTL_DB },
     { group: '起点·女频', id: 'qd_f_collect', name: '收藏榜', kind: 'qidian', type: 'collect', gender: 'female', src: 'qidian', ttl: TTL_DB },
     { group: '起点·女频', id: 'qd_f_free', name: '免费榜', kind: 'qidian', type: 'free', gender: 'female', src: 'qidian', ttl: TTL_DB },
-    { group: '豆瓣图书', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
-    { group: '豆瓣图书', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
+    { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
+    { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
   ],
   litfic: [
     { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
@@ -354,6 +354,14 @@ function yearOf(s) {
   return '';
 }
 
+function bgmTags(s) {
+  const raw = Array.isArray(s.tags) ? s.tags
+    : (Array.isArray(s.types) ? s.types
+      : (Array.isArray(s.meta_tags) ? s.meta_tags : []));
+  return raw.map((t) => String((t && (t.name || t.tag || t.value)) || t || '').trim())
+    .filter(Boolean).slice(0, 4);
+}
+
 function bgmItem(s, i, off) {
   const cn = (s.name_cn && s.name_cn.trim()) || '';
   return {
@@ -367,6 +375,7 @@ function bgmItem(s, i, off) {
     url: 'https://bgm.tv/subject/' + s.id,
     src: 'Bangumi',
     extra: s.platform ? String(s.platform) : '',
+    tags: bgmTags(s),
     id: 'bgm' + s.id,
   };
 }
@@ -404,6 +413,7 @@ async function fetchDbChart(typeId, interval) {
       extra: (s.regions || []).join('/'),
       types: s.types || [],
       regions: s.regions || [],
+      tags: (s.types || []).slice(0, 4),
     })),
   };
 }
@@ -440,6 +450,7 @@ async function fetchDbRecommend(type, tags, count, start) {
         url: 'https://movie.douban.com/subject/' + s.id + '/',
         src: '豆瓣',
         extra: parts[1] || '',
+        tags: parts.slice(2, 6),
       };
     }),
   };
@@ -463,6 +474,7 @@ async function fetchDouban(board, start, limit) {
     url: 'https://movie.douban.com/subject/' + s.id + '/',
     src: '豆瓣',
     extra: parts[1] || '',
+    tags: parts.filter((p) => !/^(?:19|20)\d{2}/.test(p)).slice(0, 4),
     id: 'db' + s.id,
   }; });
   const total = o.total || items.length;
@@ -496,7 +508,7 @@ async function buildBgmTypePool(typeId, regions, genres, baseTags) {
 }
 
 /* ---------- 抓取：豆瓣图书（recommend 筛选 + subject_collection 榜单） ---------- */
-function bookMap(s, rank) {
+function bookMap(s, rank, tagList) {
   const raw = String(s.card_subtitle || '').split('/').map((x) => x.trim()).filter(Boolean);
   const yi = raw.findIndex((p) => /^(?:19|20)\d{2}/.test(p));
   const author = yi > 0 ? raw.slice(0, yi).join(' / ') : (yi === 0 ? '' : (raw[0] || ''));
@@ -515,6 +527,7 @@ function bookMap(s, rank) {
     src: '豆瓣图书',
     extra: pub || author,
     author,
+    tags: (Array.isArray(tagList) ? tagList : []).map(String).filter(Boolean).slice(0, 4),
     id: 'dbb' + s.id,
   };
 }
@@ -536,6 +549,7 @@ async function fetchDbMusicCollection(slug, start, limit) {
       url: 'https://music.douban.com/subject/' + s.id + '/',
       src: '豆瓣音乐',
       extra: parts[1] || '',
+      tags: [].concat(s.genres || [], parts.filter((p) => !/^(?:19|20)\d{2}/.test(p))).map(String).filter(Boolean).slice(0, 4),
       id: 'dbm' + s.id,
     };
   });
@@ -546,14 +560,14 @@ async function fetchDbBookRecommend(tags, count, start) {
   const url = 'https://m.douban.com/rexxar/api/v2/book/recommend?tags=' + encodeURIComponent(tags.join(',')) + '&start=' + (start || 0) + '&count=' + count;
   const { o, via } = await getJson(url, { 'User-Agent': DB_UA, 'Referer': 'https://m.douban.com/', 'Accept': 'application/json' }, 25000);
   const arr = Array.isArray(o.items) ? o.items : [];
-  return { via, items: arr.map((s) => bookMap(s, 0)) };
+  return { via, items: arr.map((s) => bookMap(s, 0, tags)) };
 }
 
-async function fetchDbBookCollection(slug, start, limit) {
+async function fetchDbBookCollection(slug, start, limit, tagList) {
   const url = 'https://m.douban.com/rexxar/api/v2/subject_collection/' + slug + '/items?start=' + start + '&count=' + limit;
   const { o, via } = await getJson(url, { 'User-Agent': DB_UA, 'Referer': 'https://m.douban.com/', 'Accept': 'application/json' }, 20000);
   const arr = Array.isArray(o.subject_collection_items) ? o.subject_collection_items : [];
-  const items = arr.map((s, i) => bookMap(s, start + i + 1));
+  const items = arr.map((s, i) => bookMap(s, start + i + 1, tagList));
   const total = o.total || items.length;
   return { items, total, via, hasMore: start + arr.length < total };
 }
@@ -875,7 +889,7 @@ async function getRank(cat, boardId, page, limit, refresh) {
     const v = await once(key, async () => {
       const off = (pg - 1) * fetchLim;
       let r;
-      if (board.kind === 'doubanBook') r = await fetchDbBookCollection(board.slug, off, fetchLim);
+      if (board.kind === 'doubanBook') r = await fetchDbBookCollection(board.slug, off, fetchLim, [CAT_NAME[cat] || cat]);
       else if (board.kind === 'doubanMusic') r = await fetchDbMusicCollection(board.slug, off, fetchLim);
       else if (board.kind === 'netease') r = await fetchNetease(board.listId, off, fetchLim);
       else if (board.kind === 'steam250') r = await fetchSteam250(board.slug, off, fetchLim);
@@ -907,6 +921,7 @@ async function fetchNetease(listId, start, limit) {
   const pl = o.result || o.playlist || {};
   const tracks = Array.isArray(pl.tracks) ? pl.tracks : [];
   if (!tracks.length) throw new Error('网易云榜单未返回曲目');
+  const neTags = [].concat((pl.tags || []).map(String), pl.name ? [String(pl.name)] : []).filter(Boolean).slice(0, 4);
   const items = tracks.map((t, i) => {
     const album = t.album || t.al || {};
     const artists = (t.artists || t.ar || []).map((a) => a.name).filter(Boolean).join(' / ');
@@ -923,6 +938,7 @@ async function fetchNetease(listId, start, limit) {
       src: '网易云音乐',
       urlText: '歌曲',
       extra: [pl.name, album.name].filter(Boolean).join(' · '),
+      tags: neTags,
     };
   });
   const total = items.length;
@@ -958,12 +974,13 @@ async function fetchSteam250(slug, start, limit) {
     const score = parseFloat((c.match(/class="score stat"><span>([\d.]+)/) || [])[1]) || 0;
     const votes = parseInt((((c.match(/class=votes>([\d,]+)/) || [])[1]) || '').replace(/,/g, ''), 10) || 0;
     const year = ((c.match(/<a href=\/(\d{4})>/) || [])[1]) || '';
-    const tag = htmlDecode((c.match(/class="g3 tag"[^>]*>([^<]*)</) || [])[1] || '');
+    const tagM = c.match(/class="g([123]) tag"[^>]*>([^<]*)</);
+    const tag = htmlDecode(tagM ? tagM[2] : '');
     items.push({
       id: 'st' + (app || rank), rank, title, alt: '', year, score, votes,
       cover: steamImg(img),
       url: app ? 'https://store.steampowered.com/app/' + app + '/' : '',
-      src: 'Steam', urlText: 'Steam 商店', extra: tag,
+      src: 'Steam', urlText: 'Steam 商店', extra: '', tags: tag ? [tag] : [],
     });
   });
   if (!items.length) throw new Error('steam250 榜单解析失败');
@@ -1006,7 +1023,8 @@ async function fetchTaptap(typeName, platform, start, limit) {
         url: 'https://www.taptap.cn/app/' + a.id,
         src: 'TapTap',
         urlText: 'TapTap',
-        extra: (a.tags || []).slice(0, 3).map((t) => t.value).filter(Boolean).join('/'),
+        extra: '',
+        tags: (a.tags || []).map((t) => t.value).filter(Boolean),
         desc: a.rec_text || (typeof a.description === 'string' ? a.description : '') || '',
       });
     });
@@ -1074,7 +1092,8 @@ async function fetchQidian(type, gender, start, limit) {
       url: bid ? 'https://www.qidian.com/book/' + bid + '/?from=rank' : '',
       src: '起点',
       urlText: '起点',
-      extra: [x.bAuth, x.cat, x.cnt].filter(Boolean).join(' · '),
+      extra: [x.bAuth, x.cnt].filter(Boolean).join(' · '),
+      tags: [x.cat, x.subCat].filter(Boolean),
       desc: x.desc || '',
     };
   });

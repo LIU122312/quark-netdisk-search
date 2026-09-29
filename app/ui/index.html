@@ -220,6 +220,7 @@
   .racts button { padding:5px 10px; font-size:11.5px; border-radius:7px; }
   .racts a { color:var(--acc2); font-size:11.5px; text-decoration:none; margin-left:auto; white-space:nowrap; }
   .racts a:hover { text-decoration:underline; }
+  .morehint { font-size:11.5px; color:var(--fg3); margin-left:10px; }
   /* 悬停 5 秒的倒计时环 */
   .rtimer { position:absolute; left:6px; bottom:6px; width:26px; height:26px; opacity:0; transition:opacity .15s; }
   .rcard.hovering .rtimer { opacity:1; }
@@ -227,7 +228,7 @@
   .rtimer .bg { stroke:rgba(255,255,255,.22); }
   .rtimer .fg { stroke:#7fb0ff; stroke-linecap:round; stroke-dasharray:62.8; stroke-dashoffset:62.8;
     transform:rotate(-90deg); transform-origin:50% 50%; }
-  .rcard.hovering .rtimer .fg { animation:rfill 5s linear forwards; }
+  .rcard.hovering .rtimer .fg { animation:rfill var(--hs,5s) linear forwards; }
   @keyframes rfill { to { stroke-dashoffset:0; } }
   /* 悬停 5 秒后弹出的作品详情 */
   .rtip { position:fixed; z-index:70; width:min(340px,46vw); background:#151a22; border:1px solid var(--line2);
@@ -236,6 +237,9 @@
   .rtip.on { opacity:1; }
   .rtip .tt { font-size:14px; font-weight:600; color:var(--fg); line-height:1.45; }
   .rtip .ta { font-size:12px; color:var(--fg3); font-weight:400; }
+  .rtip .rtags { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .rtip .rtag { font-size:11px; color:#bcd5ff; background:rgba(76,141,255,.14);
+    border:1px solid rgba(76,141,255,.32); border-radius:999px; padding:2px 8px; line-height:1.5; }
   .rtip .tm { font-size:12px; color:var(--fg3); margin-top:5px; }
   .rtip .ts { font-size:12px; color:#9fc2ff; margin-top:5px; }
   .rtip .td { font-size:12.5px; color:var(--fg2); line-height:1.7; margin-top:8px; max-height:168px; overflow:hidden; }
@@ -336,7 +340,7 @@
       <div id="rankBoards"></div>
       <div class="rank-info" id="rankInfo">正在加载榜单...</div>
       <div class="rank-grid" id="rankGrid"></div>
-      <div class="sheet-foot"><button id="rankMore" class="small">加载更多</button></div>
+      <div class="sheet-foot"><button id="rankMore" class="small">加载更多</button><span class="morehint">滚到最底会自动接着加载</span></div>
     </div>
   </section>
   <section id="settings" hidden>
@@ -406,10 +410,19 @@
         <div class="sgroup">
           <div class="sglabel">榜单</div>
           <div class="srow">
-            <div class="st"><b>榜单每页张数</b><span>排行榜浮层每点一次「加载更多」取多少条</span></div>
+            <div class="st"><b>榜单每页张数</b><span>排行榜浮层每次取多少条（滚到底会自动接着加载）</span></div>
             <select data-sel="rankLimit">
               <option value="12">12</option><option value="24">24</option>
               <option value="36">36</option><option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+          </div>
+          <div class="srow">
+            <div class="st"><b>悬停详情秒数</b><span>鼠标停在榜单卡片上多久弹出作品详情卡（海报左下角有倒计时环）</span></div>
+            <select data-sel="hoverSec">
+              <option value="0">关闭</option><option value="2">2 秒</option>
+              <option value="3">3 秒</option><option value="5">5 秒</option>
+              <option value="8">8 秒</option><option value="10">10 秒</option>
             </select>
           </div>
         </div>
@@ -455,7 +468,7 @@ const PROV = { quark:'夸克', ali:'阿里', baidu:'百度', '115':'115', tianyi
 const PREFS = { onlyLocal:0, onlyGame:0, onlyHeji:0, exPreview:1, ex4k:0, incSd:0, incAr:1, incAll:0, useQuark:1, autoCheck:1, onlyValid:0 };
 
 /* ===================== 设置（常用项，存 localStorage） ===================== */
-const SET_DEF = { useLib:1, useOnline:1, variants:1, libLimit:800, onlineLimit:800, autoCheckN:120, batch:40, rankLimit:24, rememberKw:0 };
+const SET_DEF = { useLib:1, useOnline:1, variants:1, libLimit:800, onlineLimit:800, autoCheckN:120, batch:40, rankLimit:24, hoverSec:5, rememberKw:0 };
 const SET = (function () {
   const o = {};
   for (const k in SET_DEF) {
@@ -870,7 +883,7 @@ function rankTabs() {
     sel.regions = []; sel.genres = [];
     const allBoards = info.boards || [];
     /* 每个来源只显示属于自己的榜单：带 src 标记的归对应来源，「固定榜单」保留无标记的 */
-    const mine = allBoards.filter(function (x) { return x.src ? x.src === cur.id : cur.id === "board"; });
+    const mine = allBoards.filter(function (x) { return cur.id === "board" ? !x.src : x.src === cur.id; });
     const boards = mine.length ? mine : allBoards;
     if (!RANK.board || !boards.some(function (x) { return x.id === RANK.board; })) RANK.board = boards.length ? boards[0].id : "";
     box.innerHTML = srcRow + boardsHtml(boards);
@@ -895,7 +908,7 @@ function rankCard(it) {
       (img ? '<img loading="lazy" src="' + img + '" alt="">' : '<div class="rnoimg">无封面</div>') +
       '<span class="rrank">' + it.rank + "</span>" +
       (it.score ? '<span class="rscore">' + it.score + "</span>" : "") +
-      '<svg class="rtimer" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" cx="13" cy="13" r="10"></circle></svg>'
+      '<svg class="rtimer" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" cx="13" cy="13" r="10"></circle></svg>' +
     "</div>" +
     '<div class="rtitle" title="' + escapeHtml(it.title + (it.alt ? " / " + it.alt : "")) + '">' + q + "</div>" +
     '<div class="rsub">' + escapeHtml([it.year, it.extra, it.src].filter(Boolean).join(" · ")) + "</div>" +
@@ -905,22 +918,24 @@ function rankCard(it) {
 }
 
 /* ---------- 排行卡片：悬停 5 秒弹出作品详情 ---------- */
-const HOVER_MS = 5000;
+const hoverMs = () => (SET.hoverSec > 0 ? SET.hoverSec * 1000 : 0);
 let hoverCard = null, hoverTimer = null;
 function rankTipHide() {
   if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
-  if (hoverCard) hoverCard.classList.remove("hovering");
+  if (hoverCard) { hoverCard.classList.remove("hovering"); hoverCard.style.removeProperty("--hs"); }
   hoverCard = null;
   const tip = $("rtip");
   if (tip) { tip.classList.remove("on"); tip.__for = null; tip.innerHTML = ""; }
 }
 function rankTipHtml(it) {
+  const tags = Array.isArray(it.tags) ? it.tags.filter(Boolean).slice(0, 8) : [];
   const meta = [it.src, it.year, it.extra].filter(Boolean).join(" · ");
   const stat = [];
   if (it.rank) stat.push("名次 " + it.rank);
   if (it.score) stat.push("评分 " + it.score);
   if (it.votes) stat.push((it.votes >= 10000 ? (it.votes / 10000).toFixed(1) + " 万" : it.votes) + " 人评");
   let h = '<div class="tt">' + escapeHtml(it.title) + (it.alt ? ' <span class="ta">' + escapeHtml(it.alt) + "</span>" : "") + "</div>";
+  if (tags.length) h += '<div class="rtags">' + tags.map(function (t) { return '<span class="rtag">' + escapeHtml(t) + "</span>"; }).join("") + "</div>";
   if (meta) h += '<div class="tm">' + escapeHtml(meta) + "</div>";
   if (stat.length) h += '<div class="ts">' + escapeHtml(stat.join(" · ")) + "</div>";
   const d = String(it.desc || "").replace(/\s+/g, " ").trim();
@@ -938,7 +953,7 @@ function rankTipPlace(tip, x, y) {
   tip.style.top = top + "px";
 }
 (function () {
-  const grid = $("rankGrid"), tip = $("rtip");
+  const grid = $("rankGrid"), tip = $("rtip"), rk = $("rank");
   if (!grid || !tip) return;
   grid.addEventListener("mouseover", function (e) {
     const c = e.target.closest && e.target.closest(".rcard");
@@ -948,8 +963,9 @@ function rankTipPlace(tip, x, y) {
       return;
     }
     rankTipHide();
-    if (!c.__item) return;
+    if (!c.__item || !hoverMs()) return;
     hoverCard = c;
+    c.style.setProperty("--hs", SET.hoverSec + "s");
     c.classList.add("hovering");
     hoverTimer = setTimeout(function () {
       hoverTimer = null;
@@ -959,19 +975,45 @@ function rankTipPlace(tip, x, y) {
       tip.classList.add("on");
       const r = c.getBoundingClientRect();
       rankTipPlace(tip, r.right, r.top + 46);
-    }, HOVER_MS);
+    }, hoverMs());
   });
   grid.addEventListener("mousemove", function (e) {
     if (tip.__for && tip.__for === hoverCard) rankTipPlace(tip, e.clientX, e.clientY);
   });
   grid.addEventListener("mouseleave", function () { rankTipHide(); });
-  const rk = $("rank");
-  if (rk) rk.addEventListener("scroll", function () { rankTipHide(); }, true);
+  function nearBottom() {
+    return !!rk && !rk.hidden && rk.scrollTop + rk.clientHeight >= rk.scrollHeight - 420;
+  }
+  if (rk) rk.addEventListener("scroll", function () {
+    rankTipHide();
+    if (nearBottom()) rankFillViewport(true);
+  }, { passive: true });
+  /* 兜底：个别环境（含无头/合成滚动）不会派发 scroll 事件，用极轻量轮询保证「滚到底一定续拉」 */
+  setInterval(function () { if (nearBottom()) rankFillViewport(true); }, 600);
 })();
+
+/* 滚到底（或首屏还没占满、压根没有滚动条）时自动接着拉，省得一直点「加载更多」 */
+let rankFilling = false;
+async function rankFillViewport(forceOne) {
+  const rk = $("rank");
+  if (rankFilling || !rk || rk.hidden) return;
+  rankFilling = true;
+  let once = !!forceOne;
+  try {
+    let guard = 0;
+    while (RANK.hasMore && !RANK.autoStop && guard++ < 15 && (once || rk.scrollHeight <= rk.clientHeight + 8)) {
+      once = false;
+      const before = RANK.n;
+      RANK.page++;
+      await loadRank(true);
+      if (RANK.n <= before) { RANK.autoStop = true; break; }   /* 拉不到新东西就别再试 */
+    }
+  } finally { rankFilling = false; }
+}
 
 async function loadRank(append) {
   const my = ++RANK.gen;
-  if (!append) { RANK.page = 1; RANK.n = 0; RANK.items = []; $("rankGrid").innerHTML = ""; rankTipHide(); }
+  if (!append) { RANK.page = 1; RANK.n = 0; RANK.items = []; RANK.autoStop = false; $("rankGrid").innerHTML = ""; rankTipHide(); }
   $("rankInfo").textContent = append ? "加载中..." : "正在抓取（首次可能要十几秒）...";
   try {
     const info = (RANK.cats || {})[RANK.cat] || {};
@@ -1017,7 +1059,7 @@ async function loadRank(append) {
     }
     $("rankInfo").innerHTML = head + tail +
       (r.stale ? ' <span class="bad">（刷新失败，显示旧缓存：' + escapeHtml(r.error || "") + "）</span>" : "");
-    $("rankMore").style.display = RANK.hasMore ? "" : "none";
+    if (!append) rankFillViewport();
   } catch (e) {
     if (my !== RANK.gen) return;
     $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（Bangumi/豆瓣 源需 Clash 代理可用）";

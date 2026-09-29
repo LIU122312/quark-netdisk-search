@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const UI_PORT = 8899;
+const UI_PORT = parseInt(process.env.UI_PORT || '8899', 10);   /* 想同时跑第二个实例（例如冒烟测试）就设 UI_PORT */
 const API_HOST = '127.0.0.1';
 const API_PORT = 8888;
 const ROOT = __dirname;

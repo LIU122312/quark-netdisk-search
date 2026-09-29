@@ -134,6 +134,56 @@
   kbd { font-family:inherit; background:var(--panel2); border:1px solid var(--line2); border-bottom-width:2px;
     border-radius:5px; padding:1px 6px; font-size:11.5px; color:var(--fg2); }
 
+  /* ===================== 设置浮层（常用设置 / 信息源状态） ===================== */
+  body.ovl-open { overflow:hidden; }
+  #settings { position:fixed; inset:0; z-index:60; overflow:auto; padding:26px 22px 40px;
+    background:rgba(6,8,11,.78); backdrop-filter:blur(8px); }
+  #settings[hidden] { display:none; }
+  #settings .sheet { max-width:1000px; margin:0 auto; background:var(--bg2); border:1px solid var(--line2);
+    border-radius:18px; padding:18px 22px 22px; box-shadow:0 30px 70px rgba(0,0,0,.55); }
+  .stabs { flex:1 1 auto; display:flex; gap:8px; flex-wrap:wrap; }
+  .sgroup { border-top:1px solid var(--line); padding:14px 0 4px; }
+  .sgroup:first-child { border-top:0; padding-top:4px; }
+  .sglabel { font-size:12px; color:var(--fg3); letter-spacing:.6px; margin-bottom:6px; }
+  .srow { display:flex; align-items:center; gap:14px; padding:9px 0; border-top:1px dashed rgba(255,255,255,.045); }
+  .srow:first-of-type { border-top:0; }
+  .srow .st { flex:1 1 auto; min-width:0; }
+  .srow .st b { display:block; font-size:13.5px; font-weight:600; color:var(--fg); }
+  .srow .st span { display:block; font-size:12px; color:var(--fg3); margin-top:3px; line-height:1.6; }
+  .srow select { flex:0 0 auto; background:var(--panel); border:1px solid var(--line2); color:var(--fg);
+    border-radius:9px; padding:8px 10px; font-family:inherit; font-size:13px; min-width:132px; }
+  .sw { position:relative; flex:0 0 46px; width:46px; height:25px; border-radius:999px; background:var(--panel2);
+    border:1px solid var(--line2); padding:0; transition:background .15s, border-color .15s; }
+  .sw i { position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:var(--fg3);
+    transition:transform .16s, background .16s; }
+  .sw.on { background:rgba(76,141,255,.30); border-color:rgba(76,141,255,.5); }
+  .sw.on i { transform:translateX(21px); background:#cfe0ff; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(142px,1fr)); gap:10px; margin:12px 0 16px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .stat b { display:block; font-size:20px; letter-spacing:.2px; color:var(--fg); }
+  .stat .sl { display:block; font-size:12.5px; color:var(--fg2); margin-top:5px; }
+  .stat .ss { display:block; font-size:11.5px; color:var(--fg3); margin-top:4px; line-height:1.6; }
+  .stat.ok b { color:#7ee2a8; } .stat.bad b { color:#ff9292; } .stat.warn b { color:#ffcf6b; }
+  .sblock { margin-top:14px; }
+  .sblock h4 { margin:0 0 8px; font-size:12.5px; color:var(--fg2); font-weight:600; letter-spacing:.3px; }
+  .slist { display:flex; flex-wrap:wrap; gap:6px; }
+  .stag { font-size:11.5px; padding:3px 9px; border-radius:999px; border:1px solid var(--line2); color:var(--fg2); background:var(--panel); }
+  .stag b { color:var(--fg); }
+  .stag.ok { color:#9fe6bd; border-color:rgba(110,231,168,.32); }
+  .stag.bad { color:#ffb4b4; border-color:rgba(255,120,120,.35); }
+  .stag.warn { color:#ffd79b; border-color:rgba(255,200,110,.32); }
+  details.sdet { border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:var(--panel); margin-top:10px; }
+  details.sdet > summary { cursor:pointer; font-size:12.5px; color:var(--fg2); }
+  details.sdet > div { margin-top:10px; }
+  .probe { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:12px 0 4px; }
+  .probe input[type=text] { flex:0 1 200px; }
+  .phint { font-size:12px; color:var(--fg3); line-height:1.7; }
+  .pnote { font-size:12.5px; color:var(--fg2); line-height:1.9; margin-top:10px; }
+  .pnote b { color:var(--fg); }
+  #probeOut { margin-top:6px; }
+  .rpt { width:100%; min-height:96px; margin-top:10px; background:var(--panel); border:1px solid var(--line2);
+    border-radius:10px; color:var(--fg2); font-family:inherit; font-size:11.5px; padding:10px 12px; resize:vertical; }
+
   /* ===================== 排行榜浮层 ===================== */
   #rank { position:fixed; inset:0; z-index:50; overflow:auto; padding:26px 22px 40px;
     background:rgba(6,8,11,.74); backdrop-filter:blur(8px); }
@@ -208,6 +258,7 @@
       <button id="clear">清空</button>
       <button id="rankBtn" class="accent">排行榜</button>
       <button id="optToggle" aria-expanded="false">筛选<span class="caret">▾</span></button>
+      <button id="setBtn">设置</button>
     </div>
     <div class="opts" id="optsBox" hidden>
       <div class="ogroup">
@@ -255,6 +306,111 @@
       <div class="sheet-foot"><button id="rankMore" class="small">加载更多</button></div>
     </div>
   </section>
+  <section id="settings" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="stabs" id="setTabs">
+          <button class="chip on" data-stab="common">常用设置</button>
+          <button class="chip" data-stab="src">信息源状态</button>
+        </div>
+        <button id="setClose" class="small">关闭</button>
+      </div>
+
+      <div id="paneCommon">
+        <div class="sgroup">
+          <div class="sglabel">搜索源</div>
+          <div class="srow">
+            <div class="st"><b>本地精选库</b><span>离线索引（精选整理 + 方舟游戏库），不联网也能出结果</span></div>
+            <button class="sw" data-set="useLib" aria-pressed="true"><i></i></button>
+          </div>
+          <div class="srow">
+            <div class="st"><b>PanSou 在线聚合</b><span>TG 频道 + 影视站插件并发；关掉就只查本地库，完全离线</span></div>
+            <button class="sw" data-set="useOnline" aria-pressed="true"><i></i></button>
+          </div>
+          <div class="srow">
+            <div class="st"><b>近似词补搜 + 附加在线源</b><span>在线结果少于 5 条时自动换写法再搜一遍，并叠加 pansou.de；关掉更快也更纯</span></div>
+            <button class="sw" data-set="variants" aria-pressed="true"><i></i></button>
+          </div>
+        </div>
+
+        <div class="sgroup">
+          <div class="sglabel">结果条数</div>
+          <div class="srow">
+            <div class="st"><b>本地库最多返回</b><span>每个关键词从离线索引里取多少条</span></div>
+            <select data-sel="libLimit">
+              <option value="200">200 条</option><option value="500">500 条</option>
+              <option value="800">800 条</option><option value="1500">1500 条</option>
+              <option value="2000">2000 条</option>
+            </select>
+          </div>
+          <div class="srow">
+            <div class="st"><b>在线结果最多显示</b><span>在线动辄几千条；截断只影响显示，自动判活也只跑这些</span></div>
+            <select data-sel="onlineLimit">
+              <option value="300">300 条</option><option value="800">800 条</option>
+              <option value="1500">1500 条</option><option value="0">不限</option>
+            </select>
+          </div>
+          <div class="srow">
+            <div class="st"><b>自动判活条数</b><span>出结果后自动判活多少条（本地精选永远全判）</span></div>
+            <select data-sel="autoCheckN">
+              <option value="120">本地 + 120</option><option value="300">本地 + 300</option>
+              <option value="600">本地 + 600</option><option value="0">全部</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sgroup">
+          <div class="sglabel">判活</div>
+          <div class="srow">
+            <div class="st"><b>每批判活条数</b><span>一次提交多少条链接给本机判活接口（服务端每批并发 6 条）</span></div>
+            <select data-sel="batch">
+              <option value="20">20</option><option value="40">40</option>
+              <option value="80">80</option><option value="120">120</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sgroup">
+          <div class="sglabel">榜单</div>
+          <div class="srow">
+            <div class="st"><b>榜单每页张数</b><span>排行榜浮层每点一次「加载更多」取多少条</span></div>
+            <select data-sel="rankLimit">
+              <option value="12">12</option><option value="24">24</option>
+              <option value="36">36</option><option value="48">48</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sgroup">
+          <div class="sglabel">使用习惯</div>
+          <div class="srow">
+            <div class="st"><b>记住上次搜索</b><span>下次打开页面自动重新搜一遍上次的关键词</span></div>
+            <button class="sw" data-set="rememberKw" aria-pressed="false"><i></i></button>
+          </div>
+          <div class="srow">
+            <div class="st"><b>恢复默认设置</b><span>只重置这一页；顶部「筛选」面板里的勾选项不受影响</span></div>
+            <button id="setReset" class="small">恢复默认</button>
+          </div>
+          <div class="srow">
+            <div class="st"><b>设置生效时机</b><span>搜索源 / 条数 / 判活批次在下次搜索时生效；榜单每页张数下次翻页生效</span></div>
+            <span class="phint" id="setNote">已保存到本机浏览器</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="paneSrc" hidden>
+        <div class="probe">
+          <button id="srcReload" class="small">重新检测</button>
+          <span class="phint">实测一条：</span>
+          <input type="text" id="probeKw" value="阿凡达">
+          <button id="probeGo" class="small">开始实测</button>
+          <button id="srcCopy" class="small">复制诊断报告</button>
+          <span class="phint" id="srcAt">尚未检测</span>
+        </div>
+        <div id="srcBody"><div class="phint">正在读取源状态...</div></div>
+      </div>
+    </div>
+  </section>
 </main>
 <script>
 
@@ -263,6 +419,21 @@ const HEJI = /合集|全集|全季|合辑|系列/;
 const JUNK = /\.txt|\.mobi|\.epub|\.pdf|小说|电子书|有声|广播剧|漫画|模拟器|软件|apk|安装包|全本|TXT全文|TXT下载|预告|花絮|解说|ost|原声|主题曲/i;
 const PROV = { quark:'夸克', ali:'阿里', baidu:'百度', '115':'115', tianyi:'天翼', '123':'123', pikpak:'PikPak', other:'网盘' };
 const PREFS = { onlyLocal:0, onlyHeji:0, exPreview:1, ex4k:0, incSd:0, incAr:1, incAll:0, useQuark:1, autoCheck:1, onlyValid:0 };
+
+/* ===================== 设置（常用项，存 localStorage） ===================== */
+const SET_DEF = { useLib:1, useOnline:1, variants:1, libLimit:800, onlineLimit:800, autoCheckN:120, batch:40, rankLimit:24, rememberKw:0 };
+const SET = (function () {
+  const o = {};
+  for (const k in SET_DEF) {
+    let v = null;
+    try { v = localStorage.getItem('qs4_' + k); } catch (e) {}
+    o[k] = (v === null) ? SET_DEF[k] : (typeof SET_DEF[k] === 'number' ? (parseInt(v, 10) || 0) : (v === '1' ? 1 : 0));
+  }
+  return o;
+})();
+function setSave(k, v) { SET[k] = v; try { localStorage.setItem('qs4_' + k, String(v)); } catch (e) {} }
+function setReset() { for (const k in SET_DEF) { SET[k] = SET_DEF[k]; try { localStorage.removeItem('qs4_' + k); } catch (e) {} } }
+
 
 let rows = [];
 let vmap = {};
@@ -390,7 +561,7 @@ async function verify(all) {
   if (busyGen === my) return;
   const localN = rows.filter(r => r.local).length;
   const ordered = rows.filter(r => r.local).concat(rows.filter(r => !r.local));
-  const cap = all ? ordered.length : Math.min(ordered.length, localN + 120);
+  const cap = (all || !SET.autoCheckN) ? ordered.length : Math.min(ordered.length, localN + SET.autoCheckN);
   const need = [];
   const seen = {};
   for (let i = 0; i < cap; i++) {
@@ -404,7 +575,7 @@ async function verify(all) {
   if (!need.length) return;
   busyGen = my;
   $('bar').classList.add('on');
-  const BATCH = 40;
+  const BATCH = SET.batch || 40;
   let done = 0;
   try {
     for (let i = 0; i < need.length; i += BATCH) {
@@ -458,6 +629,11 @@ async function loadSrc() {
 async function search() {
   const kw = $('kw').value.trim();
   if (!kw) return;
+  if (SET.rememberKw) { try { localStorage.setItem('qs4_last', kw); } catch (e) {} }
+  if (!SET.useLib && !SET.useOnline) {
+    $('meta').innerHTML = '<span class="bad">两个搜索源都关掉了</span>：到「设置 → 常用设置」里至少打开一个（本地精选库 / PanSou 在线）。';
+    return 0;
+  }
   const my = ++seq;
   const btn = $('go'); btn.disabled = true; btn.textContent = '搜索中...';
   rows = []; vmap = {}; cardEls = []; busyGen = -1; $('bar').classList.remove('on');
@@ -465,16 +641,17 @@ async function search() {
   $('meta').textContent = '正在搜索（本地精选库 + TG 频道 + 插件）...';
   const t0 = Date.now();
   const enc = encodeURIComponent(kw);
-  const libUrl = '/api/library?kw=' + enc + '&limit=800&sc=' + ($('incSd').checked ? 1 : 0) +
+  const libUrl = '/api/library?kw=' + enc + '&limit=' + SET.libLimit + '&sc=' + ($('incSd').checked ? 1 : 0) +
     '&ar=' + ($('incAr').checked ? 1 : 0) + ($('incAll').checked ? '&all=1' : '');
   try {
     const res = await Promise.all([
-      fetch('/api/search?kw=' + enc + '&cloud_types=quark').then(x => x.json()).catch(() => null),
-      fetch(libUrl).then(x => x.json()).catch(() => null),
+      SET.useOnline ? fetch('/api/search?kw=' + enc + '&cloud_types=quark' + (SET.variants ? '' : '&plain=1')).then(x => x.json()).catch(() => null) : Promise.resolve(null),
+      SET.useLib ? fetch(libUrl).then(x => x.json()).catch(() => null) : Promise.resolve(null),
     ]);
     if (my !== seq) return;
     const pansou = res[0], lib = res[1];
-    const online = ((pansou && pansou.data || {}).merged_by_type || {}).quark || [];
+    let online = ((pansou && pansou.data || {}).merged_by_type || {}).quark || [];
+    if (SET.onlineLimit && online.length > SET.onlineLimit) online = online.slice(0, SET.onlineLimit);
     const localAll = (lib && lib.items) || [];
     const hid = (lib && lib.hidden) || { sd: 0, ar: 0, prov: 0 };
     const seen = {};
@@ -653,12 +830,12 @@ async function loadRank(append) {
       url = "/api/rank?cat=" + encodeURIComponent(RANK.cat) + "&src=" + encodeURIComponent(sel.src) +
         "&regions=" + encodeURIComponent(sel.regions.join(",")) +
         "&genres=" + encodeURIComponent(sel.genres.join(",")) +
-        "&page=" + RANK.page + "&limit=24";
+        "&page=" + RANK.page + "&limit=" + SET.rankLimit;
     } else {
       url = "/api/rank?cat=" + encodeURIComponent(RANK.cat) +
         (RANK.board ? "&board=" + encodeURIComponent(RANK.board) : "") +
         (info.filter ? "&src=board" : "") +
-        "&page=" + RANK.page + "&limit=24";
+        "&page=" + RANK.page + "&limit=" + SET.rankLimit;
     }
     const r = await fetch(url).then(function (x) { return x.json(); });
     if (my !== RANK.gen) return;
@@ -793,7 +970,10 @@ rankHash();
   });
   $("clear").addEventListener("click", function () { setTimeout(welcome, 0); });
   const q0 = new URLSearchParams(location.search).get("q");
-  if (q0) { $("kw").value = q0; search(); } else welcome();
+  const qLast = SET.rememberKw ? (localStorage.getItem("qs4_last") || "") : "";
+  if (q0) { $("kw").value = q0; search(); }
+  else if (qLast) { $("kw").value = qLast; search(); }
+  else welcome();
 })();
 /* ===================== 榜单状态同步到地址栏 ===================== */
 (function () {
@@ -808,6 +988,242 @@ rankHash();
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") setTimeout(sync, 0); });
   ["rankBtn", "rankClose"].forEach(function (id) { document.getElementById(id).addEventListener("click", function () { setTimeout(sync, 0); }); });
+})();
+/* ===================== 设置浮层：常用设置 + 信息源状态 ===================== */
+(function () {
+  let tab = "common";
+  const S = { h: null, l: null, cats: null, at: 0, ms: 0, probe: null };
+
+  const num = (v) => (v == null ? "0" : v.toLocaleString());
+  const hhmmss = (d) => {
+    const p = (x) => String(x).padStart(2, "0");
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  };
+
+  /* ---------- 开关 / 下拉同步 ---------- */
+  function syncControls() {
+    document.querySelectorAll("[data-sel]").forEach(function (s) {
+      s.value = String(SET[s.getAttribute("data-sel")]);
+    });
+    document.querySelectorAll("[data-set]").forEach(function (b) {
+      const on = !!SET[b.getAttribute("data-set")];
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+  function flip(el) {
+    const k = el.getAttribute("data-set");
+    setSave(k, SET[k] ? 0 : 1);
+    const on = !!SET[k];
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+    if (k === "rememberKw" && !on) { try { localStorage.removeItem("qs4_last"); } catch (e) {} }
+    $("setNote").textContent = "已保存（" + new Date().toLocaleTimeString() + "）";
+  }
+  function setTab(t) {
+    tab = t === "src" ? "src" : "common";
+    $("setTabs").querySelectorAll("[data-stab]").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-stab") === tab);
+    });
+    $("paneCommon").hidden = tab !== "common";
+    $("paneSrc").hidden = tab !== "src";
+    if (tab === "src" && !S.h) loadSrc();
+  }
+  function show(v, t) {
+    $("settings").hidden = !v;
+    document.body.classList.toggle("ovl-open", !!v);
+    if (v) { setTab(t || tab); syncControls(); }
+  }
+
+  $("setBtn").onclick = function () { if (!$("rank").hidden) toggleRank(false); show(true, "common"); };
+  $("setClose").onclick = function () { show(false); };
+  $("src").onclick = function () { show(true, "src"); };
+  $("src").title = "点这里看每个信息源的实时状态";
+  $("rankBtn").addEventListener("click", function () { if (!$("settings").hidden) show(false); });
+  $("setTabs").addEventListener("click", function (e) {
+    const b = e.target.closest && e.target.closest("[data-stab]");
+    if (b) setTab(b.getAttribute("data-stab"));
+  });
+  document.addEventListener("click", function (e) {
+    const sw = e.target.closest && e.target.closest("[data-set]");
+    if (sw) { flip(sw); return; }
+  });
+  document.addEventListener("change", function (e) {
+    const s = e.target && e.target.closest && e.target.closest("[data-sel]");
+    if (!s) return;
+    setSave(s.getAttribute("data-sel"), parseInt(s.value, 10) || 0);
+    $("setNote").textContent = "已保存（" + new Date().toLocaleTimeString() + "）";
+  });
+  $("setReset").onclick = function () {
+    setReset(); syncControls();
+    $("setNote").textContent = "已恢复默认（" + new Date().toLocaleTimeString() + "）";
+  };
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("settings").hidden) show(false);
+  });
+
+  /* ---------- 信息源状态 ---------- */
+  async function loadSrc() {
+    const t0 = Date.now();
+    $("srcAt").textContent = "正在检测...";
+    const r = await Promise.all([
+      fetch("/api/health").then((x) => x.json()).catch(() => null),
+      fetch("/api/library?kw=&limit=1").then((x) => x.json()).catch(() => null),
+      fetch("/api/rank/cats").then((x) => x.json()).catch(() => null),
+    ]);
+    S.h = r[0]; S.l = r[1]; S.cats = r[2];
+    S.ms = Date.now() - t0; S.at = new Date();
+    $("srcAt").textContent = "检测于 " + hhmmss(S.at) + " ・ 耗时 " + (S.ms / 1000).toFixed(2) + "s";
+    renderSrc();
+  }
+
+  function card(label, value, sub, cls) {
+    return '<div class="stat ' + (cls || "") + '"><b>' + (typeof value === "number" ? num(value) : escapeHtml(String(value))) +
+      '</b><span class="sl">' + escapeHtml(label) + '</span><span class="ss">' + escapeHtml(sub) + '</span></div>';
+  }
+  function stags(arr, cls, withTitle) {
+    if (!arr || !arr.length) return '<span class="phint">无</span>';
+    return arr.map(function (x) {
+      const t = withTitle ? ' title="' + escapeHtml(x.last_error || ((x.rounds || 0) + " 轮")) + '"' : "";
+      const extra = x.yielded != null && withTitle ? " <b>" + x.yielded + "</b>" : "";
+      return '<span class="stag ' + (cls || "") + '"' + t + '>' + escapeHtml(x.name) + extra + "</span>";
+    }).join("");
+  }
+
+  function renderSrc() {
+    const h = S.h || {}, l = S.l || {}, meta = l.meta || {};
+    const lv = h.liveness || {}, tg = h.tg || {}, ps = lv.plugin_status || {}, cs = lv.channel_status || {};
+    const cats = (S.cats && S.cats.cats) || {};
+    const catNames = Object.keys(cats).map((k) => (cats[k].name || k)).join(" / ");
+    const badPlug = (lv.failing_plugin_count || 0) + (lv.zero_yield_plugin_count || 0);
+    const online = !!S.h;
+    let html = '<div class="stats">';
+    html += card("本地精选库", l.indexed || 0, meta.built ? ("索引构建于 " + String(meta.built).slice(0, 16).replace("T", " ") + " ・ " + (meta.files || 0) + " 个来源文件") : "离线索引", l.indexed ? "ok" : "bad");
+    html += card("方舟游戏库", meta.games || 0, "自带夸克链接的整站种子表（已并入本地库）", meta.games ? "ok" : "warn");
+    html += card("PanSou 插件", h.plugin_count || 0, "本轮窗口内跑过 " + (lv.plugin_total || 0) + " 个 ・ 异常 " + badPlug + " 个", badPlug > 24 ? "warn" : "ok");
+    html += card("TG 频道", h.channels_count || 0, "零产出 " + (lv.zero_yield_channel_count || 0) + " 个", "ok");
+    html += card("Telegram", tg.reachable ? "可用" : "不可用", tg.reachable ? ("探测于 " + (tg.checked_seconds_ago || 0) + " 秒前 ・ 连续失败 " + (tg.fail_streak || 0) + " 次") : "不通就只有插件源 + 本地库（TG 需要代理）", tg.reachable ? "ok" : "bad");
+    html += card("榜单栏目", Object.keys(cats).length, catNames || "尚未加载", "ok");
+    html += "</div>";
+    html += '<div class="sblock"><h4>实测一条（看哪些源真的在出结果）</h4><div id="probeOut" class="phint">点上面的「开始实测」，用一条真实搜索统计各来源命中数。</div></div>';
+
+    if (!online) {
+      html += '<div class="pnote"><b class="bad">PanSou 接口没响应</b>（127.0.0.1:8888）：插件与频道状态读不到。' +
+        '本地精选库照常能用。启动方式：双击 <b>启动PanSou.cmd</b>。</div>';
+    } else {
+      html += '<div class="sblock"><h4>插件状态（本轮滑动窗口）</h4><div class="slist">';
+      [["正常", ps.ok, "ok"], ["失败", ps.failing, "bad"], ["零产出", ps.zero_yield, "warn"], ["不稳定", ps.degraded, "warn"], ["样本不足", ps.insufficient_data, ""]]
+        .forEach(function (x) { if (x[1]) html += '<span class="stag ' + x[2] + '">' + x[0] + ' <b>' + x[1] + '</b></span>'; });
+      html += "</div>";
+      html += '<details class="sdet"><summary>失败插件 ' + (lv.failing_plugin_count || 0) + ' 个（有报错、从未产出）</summary><div class="slist">' +
+        stags(lv.failing_plugins, "bad", true) + "</div></details>";
+      html += '<details class="sdet"><summary>零产出插件 ' + (lv.zero_yield_plugin_count || 0) + ' 个（没报错但一直没结果）</summary><div class="slist">' +
+        stags(lv.zero_yield_plugins, "warn", true) + "</div></details>";
+      html += '<details class="sdet"><summary>不稳定插件 ' + (lv.degraded_plugin_count || 0) + ' 个（有产出但失败过半）</summary><div class="slist">' +
+        stags(lv.degraded_plugins, "warn", true) + "</div></details>";
+
+      html += '<div class="sblock"><h4>TG 频道状态</h4><div class="slist">' +
+        '<span class="stag ok">正常 <b>' + (cs.ok || 0) + '</b></span><span class="stag warn">零产出 <b>' + (cs.zero_yield || 0) + '</b></span>' +
+        "</div>";
+      html += '<details class="sdet"><summary>零产出频道 ' + (lv.zero_yield_channel_count || 0) + ' 个</summary><div class="slist">' +
+        stags(lv.zero_yield_channels, "warn", false) + "</div></details>";
+      html += '<details class="sdet"><summary>当前启用的 ' + (h.plugin_count || 0) + ' 个插件</summary><div class="slist">' +
+        (h.plugins || []).map((n) => '<span class="stag">' + escapeHtml(n) + "</span>").join("") + "</div></details>";
+      html += '<details class="sdet"><summary>当前订阅的 ' + (h.channels_count || 0) + ' 个 TG 频道</summary><div class="slist">' +
+        (h.channels || []).map((n) => '<span class="stag">' + escapeHtml(n) + "</span>").join("") + "</div></details>";
+      html += '<div class="sblock"><h4>Telegram 探测</h4><div class="pnote">' + escapeHtml(tg.reason || "无") +
+        "<br>连续失败 " + (tg.fail_streak || 0) + " 次判定为不可用（阈值 " + (tg.required_failures || 2) + " 次）</div></div>";
+      html += '<div class="sblock"><h4>说明</h4><div class="pnote">' + escapeHtml(lv.note || "") + "</div></div>";
+    }
+    html += '<div class="sblock"><h4>本地索引</h4><div class="probe">' +
+      '<button id="libReload" class="small">重建本地索引</button>' +
+      '<span class="phint">改过 app/lib/index.json 或 games.json 后点这里（平时会自动跟随）</span></div><div id="libOut" class="phint"></div></div>';
+
+    $("srcBody").innerHTML = html;
+    $("libReload").onclick = async function () {
+      const b = $("libReload"); b.disabled = true; b.textContent = "重建中...";
+      const r = await fetch("/api/library/reload", { method: "POST" }).then((x) => x.json()).catch(() => null);
+      b.disabled = false; b.textContent = "重建本地索引";
+      $("libOut").textContent = r ? ("已重建：" + num(r.indexed) + " 条" + (r.meta && r.meta.games ? ("（含游戏 " + num(r.meta.games) + " 条）") : "")) : "重建失败：接口没响应";
+    };
+  }
+
+  /* ---------- 实测一条 ---------- */
+  async function probe() {
+    const kw = ($("probeKw").value || "").trim() || "阿凡达";
+    const b = $("probeGo");
+    if (!$("probeOut")) renderSrc();
+    b.disabled = true; b.textContent = "实测中...";
+    $("probeOut").innerHTML = '<div class="phint">正在用「' + escapeHtml(kw) + '」实搜一条（最多几十秒）...</div>';
+    const t0 = Date.now();
+    let pansou = null, lib = null;
+    try {
+      const r = await Promise.all([
+        fetch("/api/search?kw=" + encodeURIComponent(kw) + "&cloud_types=quark").then((x) => x.json()).catch(() => null),
+        fetch("/api/library?kw=" + encodeURIComponent(kw) + "&limit=50").then((x) => x.json()).catch(() => null),
+      ]);
+      pansou = r[0]; lib = r[1];
+    } finally { b.disabled = false; b.textContent = "开始实测"; }
+    const ms = Date.now() - t0;
+    const d = (pansou && pansou.data) || {};
+    const q = (d.merged_by_type || {}).quark || [];
+    const by = {};
+    q.forEach(function (x) { const s = String(x.source || "未知"); by[s] = (by[s] || 0) + 1; });
+    const ent = Object.keys(by).map((k) => ({ k: k, n: by[k] })).sort((a, x) => x.n - a.n);
+    const tgN = ent.filter((x) => x.k.indexOf("tg:") === 0).length;
+    const plN = ent.filter((x) => x.k.indexOf("plugin:") === 0).length;
+    const en = d.enhanced || {};
+    S.probe = { kw: kw, ms: ms, n: q.length, ent: ent, tgN: tgN, plN: plN, lib: (lib && lib.total) || 0, variants: en.variants || [], extras: en.extras || [] };
+    const chips = ent.slice(0, 30).map(function (x) {
+      const isTg = x.k.indexOf("tg:") === 0;
+      const isPl = x.k.indexOf("plugin:") === 0;
+      const ext = !isTg && !isPl && x.k.indexOf(":plugin:") >= 0;
+      const nm = x.k.replace(/^tg:/, "").replace(/^[^:]*:plugin:/, "").replace(/^plugin:/, "");
+      return '<span class="stag ' + (isTg ? "" : "ok") + '" title="' + escapeHtml(x.k) + '">' +
+        (isTg ? "TG " : (ext ? "外源 " : "插件 ")) + escapeHtml(nm) + " <b>" + x.n + "</b></span>";
+    }).join("") || '<span class="phint">没有任何来源返回结果</span>';
+    const enabled = (S.h && S.h.plugin_count) || 0;
+    $("probeOut").innerHTML =
+      '<div class="pnote">实测「<b>' + escapeHtml(kw) + '</b>」：在线 <b>' + q.length + '</b> 条 ・ 命中来源 <b>' + ent.length +
+      '</b> 个（TG ' + tgN + " / 插件 " + plN + "）・ 本地库 <b>" + S.probe.lib + '</b> 条 ・ 用时 <b>' + (ms / 1000).toFixed(1) + 's</b>' +
+      (en.variants && en.variants.length ? "<br>触发近似词补搜：" + en.variants.map(escapeHtml).join(" / ") : "") +
+      (en.extras && en.extras.length ? "<br>附加在线源：" + en.extras.map(escapeHtml).join(" ") : "") +
+      (enabled ? ("<br>本次没产出的插件约 <b>" + Math.max(enabled - plN, 0) + "</b> 个（站点今天没收录这个词，或已失效——看上面的失败名单）") : "") +
+      "</div>" + '<div class="slist" style="margin-top:10px">' + chips + "</div>";
+  }
+  $("probeGo").onclick = probe;
+  $("srcReload").onclick = loadSrc;
+  $("probeKw").addEventListener("keydown", function (e) { if (e.key === "Enter") probe(); });
+
+  /* ---------- 复制诊断报告 ---------- */
+  $("srcCopy").onclick = async function () {
+    const h = S.h || {}, l = S.l || {}, lv = h.liveness || {}, tg = h.tg || {}, meta = l.meta || {};
+    const lines = [];
+    lines.push("夸克资源检索 · 信息源诊断 " + new Date().toLocaleString());
+    lines.push("本地精选库 " + (l.indexed || 0) + " 条（游戏 " + (meta.games || 0) + "）・索引构建 " + (meta.built || "未知"));
+    lines.push("插件 " + (h.plugin_count || 0) + " / 频道 " + (h.channels_count || 0) + " ・ TG " + (tg.reachable ? "可用" : "不可用") + "（" + (tg.reason || "") + "）");
+    lines.push("插件状态 " + JSON.stringify(lv.plugin_status || {}));
+    lines.push("频道状态 " + JSON.stringify(lv.channel_status || {}));
+    lines.push("失败插件：" + (lv.failing_plugins || []).map((x) => x.name + "(" + (x.last_error || "").slice(0, 60) + ")").join(" | "));
+    lines.push("零产出插件：" + (lv.zero_yield_plugins || []).map((x) => x.name).join(","));
+    lines.push("零产出频道：" + (lv.zero_yield_channels || []).map((x) => x.name).join(","));
+    if (S.probe) lines.push("实测「" + S.probe.kw + "」" + (S.probe.ms / 1000).toFixed(1) + "s ・ 在线 " + S.probe.n + " 条 ・ 命中来源 " + S.probe.ent.length + " 个（TG " + S.probe.tgN + "/插件 " + S.probe.plN + "）");
+    const txt = lines.join("\n");
+    let copied = false;
+    try { await navigator.clipboard.writeText(txt); copied = true; } catch (e) { copied = false; }
+    const ta = document.createElement("textarea");
+    ta.className = "rpt"; ta.textContent = txt; ta.readOnly = true;
+    const old = $("rptBox");
+    if (old) old.remove();
+    const box = document.createElement("div");
+    box.id = "rptBox";
+    box.innerHTML = "<div class=\"phint\" style=\"margin:8px 0 2px\">" +
+      (copied ? "已复制到剪贴板" : "剪贴板不可用（在下面框里 Ctrl+A / Ctrl+C）") + " ・ " + txt.length + " 字</div>";
+    box.appendChild(ta);
+    $("srcBody").appendChild(box);
+    box.scrollIntoView({ block: "nearest" });
+    $("srcAt").textContent = copied ? "诊断报告已复制（" + txt.length + " 字）" : "诊断报告已生成（" + txt.length + " 字）";
+  };
 })();
 </script>
 </body>

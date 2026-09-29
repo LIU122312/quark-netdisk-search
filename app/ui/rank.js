@@ -652,8 +652,18 @@ async function buildLocalGamePool(regions, genres) {
 }
 
 /* ---------- 缓存 ---------- */
+/* 榜单条目结构改过就把版本号 +1，旧缓存自动失效 */
+const CACHE_VER = 'v2';
+const ck = (k) => CACHE_VER + '|' + k;
 let disk = {};
 try { disk = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) || {}; } catch (e) { disk = {}; }
+/* 顺手清掉 3 天没动过的条目，别让缓存文件一直涨 */
+try {
+  const cut = Date.now() - 3 * 24 * 3600e3;
+  let dropped = 0;
+  Object.keys(disk).forEach((k) => { const r = disk[k]; if (!r || !r.t || r.t < cut) { delete disk[k]; dropped++; } });
+  if (dropped) console.log('[rank] 清理过期榜单缓存 ' + dropped + ' 条');
+} catch (e) {}
 let saveTimer = null;
 function saveSoon() {
   if (saveTimer) return;
@@ -831,7 +841,7 @@ async function getFiltered(cat, srcId, regions, genres, page, limit, refresh, bo
   const pg = Math.max(1, Math.min(parseInt(page || 1, 10), src.maxPages || 20));
   const rk = regions.map((r) => (typeof r === 'string' ? r : (r.n || r.t))).join(',');
   const gk = genres.join(',');
-  const key = 'pool:' + cat + ':' + src.id + '|' + rk + '|' + gk;
+  const key = ck('pool:' + cat + ':' + src.id + '|' + rk + '|' + gk);
 
   /* 本地游戏库还在增量抓取，用短 TTL 让它跟着涨 */
   const ttl = src.kind === 'localGame' ? 60000 : TTL_POOL;
@@ -878,7 +888,7 @@ async function getRank(cat, boardId, page, limit, refresh) {
   const lim = Math.max(1, Math.min(parseInt(limit || 24, 10), 60));
   const pg = Math.max(1, Math.min(parseInt(page || 1, 10), 50));
   const fetchLim = Math.max(24, lim);
-  const key = cat + '|' + board.id + '#' + pg + '#' + fetchLim;
+  const key = ck(cat + '|' + board.id + '#' + pg + '#' + fetchLim);
   const now = Date.now();
   const rec = disk[key];
   const slice = (v) => Object.assign({}, v, { items: v.items.slice(0, lim) });
@@ -976,9 +986,11 @@ async function fetchSteam250(slug, start, limit) {
     const year = ((c.match(/<a href=\/(\d{4})>/) || [])[1]) || '';
     const tagM = c.match(/class="g([123]) tag"[^>]*>([^<]*)</);
     const tag = htmlDecode(tagM ? tagM[2] : '');
+    const capsule = steamImg(img);
     items.push({
       id: 'st' + (app || rank), rank, title, alt: '', year, score, votes,
-      cover: steamImg(img),
+      cover: app ? ('https://shared.steamstatic.com/store_item_assets/steam/apps/' + app + '/library_600x900.jpg') : capsule,
+      coverFallback: app ? capsule : '',
       url: app ? 'https://store.steampowered.com/app/' + app + '/' : '',
       src: 'Steam', urlText: 'Steam 商店', extra: '', tags: tag ? [tag] : [],
     });

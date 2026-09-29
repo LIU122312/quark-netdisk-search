@@ -902,10 +902,11 @@ function rankTabs() {
 
 function rankCard(it) {
   const img = it.cover ? "/api/cover?u=" + encodeURIComponent(it.cover) : "";
+  const fb = it.coverFallback ? "/api/cover?u=" + encodeURIComponent(it.coverFallback) : "";
   const q = escapeHtml(it.title);
   return '<div class="rcard">' +
     '<div class="rposter" data-rsearch="' + q + '" title="点封面直接搜索网盘资源">' +
-      (img ? '<img loading="lazy" src="' + img + '" alt="">' : '<div class="rnoimg">无封面</div>') +
+      (img ? '<img loading="lazy" src="' + img + '"' + (fb ? ' data-fb="' + fb + '"' : '') + ' alt="">' : '<div class="rnoimg">无封面</div>') +
       '<span class="rrank">' + it.rank + "</span>" +
       (it.score ? '<span class="rscore">' + it.score + "</span>" : "") +
       '<svg class="rtimer" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10"></circle><circle class="fg" cx="13" cy="13" r="10"></circle></svg>' +
@@ -981,6 +982,15 @@ function rankTipPlace(tip, x, y) {
     if (tip.__for && tip.__for === hoverCard) rankTipPlace(tip, e.clientX, e.clientY);
   });
   grid.addEventListener("mouseleave", function () { rankTipHide(); });
+  /* 竖版封面缺图时自动换回退封面（error 事件不冒泡，只能捕获） */
+  grid.addEventListener("error", function (e) {
+    const im = e.target;
+    if (!im || im.tagName !== "IMG") return;
+    const fb = im.getAttribute("data-fb");
+    if (!fb) return;
+    im.removeAttribute("data-fb");
+    im.src = fb;
+  }, true);
   function nearBottom() {
     return !!rk && !rk.hidden && rk.scrollTop + rk.clientHeight >= rk.scrollHeight - 420;
   }

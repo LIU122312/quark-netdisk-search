@@ -411,7 +411,7 @@ function curSel() {
   return RANK.sel[RANK.cat];
 }
 let rankTimer = null;
-const RANK_CATS = [["anime", "动漫"], ["movie", "电影"], ["tv", "剧集"], ["novel", "小说"], ["game", "游戏"]];
+const RANK_CATS = [["anime", "动漫"], ["movie", "电影"], ["tv", "剧集"], ["webfiction", "网文"], ["litfic", "传统文学"], ["comic", "漫画"], ["game", "游戏"], ["music", "音乐"]];
 
 async function loadRankCats() {
   if (RANK.cats) return RANK.cats;
@@ -569,7 +569,11 @@ function shortTitle(t) {
 async function rankSearch(title) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   $("kw").value = title;
+  /* 小说/游戏栏目：默认勾选的「去掉小说/漫画/软件/预告」会把整类结果滤光，这里自动放开 */
+  const relax = ["anime", "movie", "tv"].indexOf(RANK.cat) < 0;
+  if (relax && $("exPreview").checked) { $("exPreview").checked = false; savePrefs(); }
   const n = await search();
+  if (relax) $("meta").innerHTML += '<br><span class="bad">提示</span>：小说/漫画/游戏/音乐栏目已自动放开「去掉小说/漫画/软件/预告」过滤，可手动改回';
   if (n === 0) {
     const s = shortTitle(title);
     if (s && s !== title) { $("kw").value = s; await search(); }

@@ -71,12 +71,15 @@ function metaOf(b) {
   };
 }
 async function resolveQuark(postId, key) {
+  let netErr = null;
   for (const id of [0, 1, 2, 3]) {
-    const r = await getRetry('https://' + HOST + '/pay-download/' + postId + '?key=' + key + '&down_id=' + id, 15000, true, 2);
+    const r = await getRetry('https://' + HOST + '/pay-download/' + postId + '?key=' + key + '&down_id=' + id, 15000, true, 3);
     const loc = r.loc || '';
     if (/pan\.quark\.cn\/s\//i.test(loc)) return { quark: loc.replace(/&amp;/g, '&'), id };
+    if (!r.status) netErr = r.err || 'NET';
   }
-  return null;
+  /* 四个通道都没探到夸克：期间若发生过网络错误，不能断定「没有夸克」，交给下轮重试 */
+  return netErr ? { retry: true, err: netErr } : null;
 }
 function loadJson(f, d) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } }
 
@@ -102,13 +105,14 @@ function loadJson(f, d) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); }
       const p = todo[i++];
       try {
         const page = await getRetry(p.link, 30000, false, 3);
-        if (page.status !== 200) { fail++; cache.done[p.id] = 1; console.log('  [页面 ' + page.status + ' ' + (page.err || '') + '] ' + p.link); continue; }
+        if (page.status !== 200) { fail++; console.log('  [页面 ' + page.status + ' ' + (page.err || '') + '] ' + p.link); continue; }
         const m = page.body.match(/pay-download\/(\d+)\?key=([a-f0-9]+)/);
         if (!m) { fail++; cache.done[p.id] = 1; console.log('  [无下载入口] ' + p.link); continue; }
         const q = await resolveQuark(m[1], m[2]);
         await sleep(DELAY);
         const meta = metaOf(page.body);
         const title = decode((p.title && p.title.rendered) || '');
+        if (q && q.retry) { console.log('  [通道探测网络失败，留待重试] ' + title + ' (' + q.err + ')'); continue; }
         if (q) {
           cache.items.push({
             n: title, k: searchKey(title), u: q.quark, c: '方舟游戏', p: 'quark',

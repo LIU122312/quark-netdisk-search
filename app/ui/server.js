@@ -120,11 +120,25 @@ const LIB_INDEX = path.join(LIB_DIR, 'index.json');
 const CACHE_FILE = path.join(LIB_DIR, 'check-cache.json');
 let libCache = null;
 
+const GAMES_INDEX = path.join(LIB_DIR, 'games.json');
+
 function loadLib() {
   if (libCache) return libCache;
   try {
     const j = JSON.parse(fs.readFileSync(LIB_INDEX, 'utf8'));
-    libCache = { meta: j.meta || {}, items: Array.isArray(j.items) ? j.items : [] };
+    const items = Array.isArray(j.items) ? j.items : [];
+    const meta = Object.assign({}, j.meta || {});
+    /* 并入本地游戏库（方舟游戏整站种子表）：搜游戏名也能直接出夸克链接 */
+    try {
+      const g = JSON.parse(fs.readFileSync(GAMES_INDEX, 'utf8'));
+      const gi = Array.isArray(g.items) ? g.items : [];
+      if (gi.length) {
+        items.push(...gi);
+        meta.games = gi.length;
+        meta.total = (meta.total || 0) + gi.length;
+      }
+    } catch (e) { /* 没有 games.json 就只用原库 */ }
+    libCache = { meta, items };
   } catch (e) {
     libCache = { meta: { error: String(e.message) }, items: [] };
   }
@@ -485,4 +499,8 @@ server.listen(UI_PORT, '127.0.0.1', () => {
   warmDelay('anime/豆瓣池', 9000, () => rank.getFiltered('anime', 'db', [], [], 1, 24, false));
   warmDelay('tv/Bangumi 不限', 12000, () => rank.getFiltered('tv', 'bgm', [], [], 1, 24, false));
   warmDelay('movie/Bangumi 不限', 15000, () => rank.getFiltered('movie', 'bgm', [], [], 1, 24, false));
+  warmDelay('comic/豆瓣 不限', 18000, () => rank.getFiltered('comic', 'db', [], [], 1, 24, false));
+  warmDelay('webfiction/豆瓣 不限', 21000, () => rank.getFiltered('webfiction', 'db', [], [], 1, 24, false));
+  warmDelay('litfic/豆瓣 不限', 24000, () => rank.getFiltered('litfic', 'db', [], [], 1, 24, false));
+  warmDelay('music/Bangumi 不限', 27000, () => rank.getFiltered('music', 'bgm', [], [], 1, 24, false));
 });

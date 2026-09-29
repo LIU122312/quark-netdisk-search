@@ -37,14 +37,30 @@ const TV_BGM_G = ['剧情', '科幻', '悬疑', '动作', '喜剧', '爱情', '�
 
 const BGM_TIP = '名次为 Bangumi 全站排名；题材多选为「同时满足」';
 const DB_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
-/* 小说：豆瓣图书的「产地」用文学国别标签，「题材」用图书标签；多选为「同时满足」 */
-const BOOK_R = ['中国文学', '日本文学', '欧美文学', '外国文学', '美国文学', '英国文学', '法国文学', '俄国文学'];
-const BOOK_G = ['小说', '推理', '科幻', '武侠', '言情', '奇幻', '悬疑', '青春', '经典', '历史', '散文', '诗歌', '传记', '社会', '哲学', '成长', '漫画', '轻小说', '网络小说', '恐怖', '战争', '纪实'];
-const BOOK_BGM_G = ['小说', '轻小说', '漫画', '文学', '奇幻', '科幻', '推理', '恋爱'];
-const BOOK_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
+/* 网文：豆瓣图书「网络小说」系标签 + Bangumi 书籍 */
+const WEB_G = ['网络小说', '玄幻', '仙侠', '言情', '都市', '武侠', '轻小说', '奇幻', '科幻'];
+const WEB_BGM_G = ['轻小说', '奇幻', '恋爱', '小说'];
+const WEB_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
+/* 传统文学 */
+const LIT_R = ['中国文学', '日本文学', '欧美文学', '外国文学', '美国文学', '英国文学', '法国文学', '俄国文学'];
+const LIT_G = ['小说', '经典', '中国文学', '日本文学', '欧美文学', '外国文学', '散文', '诗歌', '传记', '推理', '社会', '哲学', '历史', '纪实', '随笔', '科幻'];
+const LIT_BGM_G = ['小说', '文学', '推理', '科幻', '奇幻'];
+const LIT_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
+/* 漫画：豆瓣图书「漫画/绘本/画集」+ Bangumi 书籍 */
+const COMIC_R = ['日本漫画', '欧美漫画'];
+const COMIC_G = ['漫画', '绘本', '画集', '日本漫画'];
+const COMIC_BGM_G = ['漫画', '画集', '绘本'];
+const COMIC_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
+/* 音乐：Bangumi 音乐（type=3，全站排名）+ 豆瓣热门音乐榜 */
+const MUSIC_G = ['动画歌曲', 'J-Pop', '摇滚', '原声', '游戏音乐', '电子', '古典', '爵士'];
+const MUSIC_TIP = '名次为 Bangumi 全站排名；题材多选为「同时满足」';
+
 /* 游戏：Bangumi 游戏（平台 + 类型）；方舟游戏为本地离线库，条目自带夸克链接 */
 const GAME_BGM_G = ['PC', 'Switch', 'PS4', 'PS5', 'Galgame', '独立游戏', '角色扮演', '动作', '冒险', '射击', '模拟', '策略', '体育', '解谜'];
 const LOCAL_GAME_TIP = '本地离线库：方舟游戏整站种子表，条目直接带夸克链接，点封面即搜';
+const WEB_DEFAULT_TAGS = ['网络小说', '玄幻', '仙侠', '言情', '都市', '轻小说', '武侠', '科幻'];
+const LIT_DEFAULT_TAGS = ['小说', '经典', '中国文学', '外国文学', '推理', '散文', '历史', '社会'];
+const COMIC_DEFAULT_TAGS = ['漫画', '绘本', '画集', '日本漫画'];
 const SRC_DEF = {
   anime: [
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [{ n: '国漫', t: '中国' }, { n: '日漫', t: '日本' }, { n: '欧美', t: '美国' }], genres: ['热血', '科幻', '奇幻', '恋爱', '日常', '搞笑', '治愈', '悬疑', '校园', '机战', '运动', '音乐', '历史'], kind: 'bgmAnime' },
@@ -60,11 +76,28 @@ const SRC_DEF = {
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: TV_BGM_R, genres: TV_BGM_G, kind: 'bgmReal', base: '电视剧' },
     { id: 'board', name: '固定榜单', tip: '口碑榜 / 分类榜', kind: 'board' },
   ],
-  /* ---- 小说 ---- */
-  novel: [
-    { id: 'db', name: '豆瓣图书', tip: BOOK_TIP, regions: BOOK_R, genres: BOOK_G, kind: 'dbBook' },
-    { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: BOOK_BGM_G, kind: 'bgmType', typeId: 1 },
+  /* ---- 网文 ---- */
+  webfiction: [
+    { id: 'db', name: '豆瓣图书', tip: WEB_TIP, regions: [], genres: WEB_G, kind: 'dbBook', defaultTags: WEB_DEFAULT_TAGS },
+    { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: WEB_BGM_G, kind: 'bgmType', typeId: 1, baseTags: ['轻小说'] },
     { id: 'board', name: '固定榜单', tip: '图书Top250 / 热门图书', kind: 'board' },
+  ],
+  /* ---- 传统文学 ---- */
+  litfic: [
+    { id: 'db', name: '豆瓣图书', tip: LIT_TIP, regions: LIT_R, genres: LIT_G, kind: 'dbBook', defaultTags: LIT_DEFAULT_TAGS },
+    { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: LIT_BGM_G, kind: 'bgmType', typeId: 1, baseTags: ['小说'] },
+    { id: 'board', name: '固定榜单', tip: '图书Top250 / 热门图书', kind: 'board' },
+  ],
+  /* ---- 漫画 ---- */
+  comic: [
+    { id: 'db', name: '豆瓣图书', tip: COMIC_TIP, regions: COMIC_R, genres: COMIC_G, kind: 'dbBook', defaultTags: COMIC_DEFAULT_TAGS },
+    { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: COMIC_BGM_G, kind: 'bgmType', typeId: 1, baseTags: ['漫画'] },
+    { id: 'board', name: '固定榜单', tip: '图书Top250 / 热门图书', kind: 'board' },
+  ],
+  /* ---- 音乐 ---- */
+  music: [
+    { id: 'bgm', name: 'Bangumi', tip: MUSIC_TIP, regions: [], genres: MUSIC_G, kind: 'bgmType', typeId: 3 },
+    { id: 'board', name: '固定榜单', tip: '豆瓣热门音乐', kind: 'board' },
   ],
   /* ---- 游戏 ---- */
   game: [
@@ -72,7 +105,7 @@ const SRC_DEF = {
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: GAME_BGM_G, kind: 'bgmType', typeId: 4 },
   ],
 };
-const CAT_SRC = { anime: 'bgm', movie: 'db', tv: 'db', novel: 'db', game: 'local' };
+const CAT_SRC = { anime: 'bgm', movie: 'db', tv: 'db', webfiction: 'db', litfic: 'db', comic: 'db', music: 'bgm', game: 'local' };
 const WEST = ['美国', '英国', '法国', '德国', '意大利', '西班牙', '加拿大', '澳大利亚', '新西兰', '爱尔兰', '瑞典', '丹麦', '挪威', '芬兰', '荷兰', '比利时', '奥地利', '瑞士', '俄罗斯', '波兰', '捷克', '冰岛', '墨西哥', '巴西', '阿根廷', '南非'];
 
 /* ============ 电影/剧集：豆瓣固定榜单 ============ */
@@ -93,13 +126,25 @@ const BOARDS = {
     { group: '分类', id: 'db_tv_documentary', name: '纪录片', kind: 'douban', slug: 'tv_documentary', ttl: TTL_DB },
     { group: '分类', id: 'db_tv_variety', name: '综艺', kind: 'douban', slug: 'tv_variety_show', ttl: TTL_DB },
   ],
-  novel: [
+  webfiction: [
     { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
     { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
   ],
+  litfic: [
+    { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
+    { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
+  ],
+  comic: [
+    { group: '榜单', id: 'db_book_top250', name: '图书 Top250', kind: 'doubanBook', slug: 'book_top250', ttl: 24 * 3600e3 },
+    { group: '榜单', id: 'db_book_hot', name: '热门图书', kind: 'doubanBook', slug: 'book_hot', ttl: TTL_DB },
+  ],
+  music: [
+    { group: '榜单', id: 'db_music_hot', name: '热门音乐', kind: 'doubanMusic', slug: 'music_hot', ttl: TTL_DB },
+  ],
   game: [],
 };
-const CAT_NAME = { anime: '动漫', movie: '电影', tv: '剧集', novel: '小说', game: '游戏' };
+
+const CAT_NAME = { anime: '动漫', movie: '电影', tv: '剧集', webfiction: '网文', litfic: '传统文学', comic: '漫画', music: '音乐', game: '游戏' };
 
 /* ---------- HTTP：直连优先，失败回退 Clash HTTP CONNECT 代理 ---------- */
 function reqDirect(url, headers, timeoutMs, asBuffer, body) {
@@ -333,13 +378,13 @@ async function fetchDouban(board, start, limit) {
 /* ---------- 抓取：Bangumi 按 subject type 拉排行（书籍=1，游戏=4） ----------
    注：书籍/游戏不像动画有「日本/美国」这类产地 meta，按类型拉时多翻几页攒池子 */
 const BGM_PAGES_TYPE = 14;
-async function buildBgmTypePool(typeId, regions, genres) {
+async function buildBgmTypePool(typeId, regions, genres, baseTags) {
   const routes = regions.length ? regions : [''];
   const pages = regions.length ? BGM_PAGES : BGM_PAGES_TYPE;
   const jobs = [];
   for (const rt of routes) {
     for (let p = 0; p < pages; p++) {
-      jobs.push(fetchBgmSearch((rt ? [rt] : []).concat(genres), p * BGM_PAGE, typeId).catch(() => null));
+      jobs.push(fetchBgmSearch((rt ? [rt] : []).concat(genres.length ? genres : (baseTags || [])), p * BGM_PAGE, typeId).catch(() => null));
     }
   }
   const res = await Promise.all(jobs);
@@ -380,6 +425,29 @@ function bookMap(s, rank) {
   };
 }
 
+async function fetchDbMusicCollection(slug, start, limit) {
+  const url = 'https://m.douban.com/rexxar/api/v2/subject_collection/' + slug + '/items?start=' + start + '&count=' + limit;
+  const { o, via } = await getJson(url, { 'User-Agent': DB_UA, 'Referer': 'https://m.douban.com/', 'Accept': 'application/json' }, 20000);
+  const arr = Array.isArray(o.subject_collection_items) ? o.subject_collection_items : [];
+  const items = arr.map((s, i) => {
+    const parts = String(s.card_subtitle || '').split('/').map((x) => x.trim()).filter(Boolean);
+    return {
+      rank: start + i + 1,
+      title: s.title || '',
+      alt: '',
+      year: (s.year && String(s.year).slice(0, 4)) || '',
+      score: (s.rating && s.rating.value) || 0,
+      votes: (s.rating && s.rating.count) || 0,
+      cover: (s.pic && (s.pic.large || s.pic.normal)) || '',
+      url: 'https://music.douban.com/subject/' + s.id + '/',
+      src: '豆瓣音乐',
+      extra: parts[1] || '',
+      id: 'dbm' + s.id,
+    };
+  });
+  const total = o.total || items.length;
+  return { items, total, via, hasMore: start + arr.length < total };
+}
 async function fetchDbBookRecommend(tags, count, start) {
   const url = 'https://m.douban.com/rexxar/api/v2/book/recommend?tags=' + encodeURIComponent(tags.join(',')) + '&start=' + (start || 0) + '&count=' + count;
   const { o, via } = await getJson(url, { 'User-Agent': DB_UA, 'Referer': 'https://m.douban.com/', 'Accept': 'application/json' }, 25000);
@@ -399,9 +467,10 @@ async function fetchDbBookCollection(slug, start, limit) {
 const BOOK_DEFAULT_TAGS = ['小说', '中国文学', '外国文学', '推理', '科幻', '武侠', '言情', '奇幻', '悬疑', '青春', '经典', '历史'];
 const BOOK_PAGES = 4;
 
-async function buildDbBookPool(regions, genres) {
+
+async function buildDbBookPool(regions, genres, defaultTags) {
   const bare = !regions.length && !genres.length;
-  const routes = bare ? BOOK_DEFAULT_TAGS : (regions.length ? regions : ['']);
+  const routes = bare ? ((defaultTags && defaultTags.length) ? defaultTags : BOOK_DEFAULT_TAGS) : (regions.length ? regions : ['']);
   const jobs = [];
   for (const r of routes) {
     const tags = (r ? [r] : []).concat(bare ? [] : genres);
@@ -505,7 +574,7 @@ function cats() {
   for (const c in BOARDS) {
     out[c] = { name: CAT_NAME[c] || c, boards: BOARDS[c].map((b) => ({ id: b.id, name: b.name, group: b.group || '', desc: b.desc || '' })) };
   }
-  for (const c of ['anime', 'movie', 'tv', 'novel', 'game']) {
+  for (const c of ['anime', 'movie', 'tv', 'webfiction', 'litfic', 'comic', 'music', 'game']) {
     out[c] = {
       name: CAT_NAME[c] || c,
       filter: true,
@@ -629,9 +698,9 @@ function resolveRegions(cat, srcId, names) {
 async function buildPool(src, regions, genres) {
   if (src.kind === 'bgmAnime') return buildBgmPool(regions, genres);
   if (src.kind === 'bgmReal') return buildBgmRealPool(src.base, regions, genres);
-  if (src.kind === 'bgmType') return buildBgmTypePool(src.typeId, regions, genres);
+  if (src.kind === 'bgmType') return buildBgmTypePool(src.typeId, regions, genres, src.baseTags);
   if (src.kind === 'dbRec') return buildDbRecPool(src.type, regions, genres);
-  if (src.kind === 'dbBook') return buildDbBookPool(regions, genres);
+  if (src.kind === 'dbBook') return buildDbBookPool(regions, genres, src.defaultTags);
   if (src.kind === 'localGame') return buildLocalGamePool(regions, genres);
   /* dbAnime：豆瓣动画池（本地过滤） */
   const p = await getDbPool();
@@ -699,7 +768,7 @@ async function getRank(cat, boardId, page, limit, refresh) {
   const lim = Math.max(1, Math.min(parseInt(limit || 24, 10), 60));
   const pg = Math.max(1, Math.min(parseInt(page || 1, 10), 50));
   const fetchLim = Math.max(24, lim);
-  const key = board.id + '#' + pg + '#' + fetchLim;
+  const key = cat + '|' + board.id + '#' + pg + '#' + fetchLim;
   const now = Date.now();
   const rec = disk[key];
   const slice = (v) => Object.assign({}, v, { items: v.items.slice(0, lim) });
@@ -710,7 +779,9 @@ async function getRank(cat, boardId, page, limit, refresh) {
     const v = await once(key, async () => {
       const r = board.kind === 'doubanBook'
         ? await fetchDbBookCollection(board.slug, (pg - 1) * fetchLim, fetchLim)
-        : await fetchDouban(board, (pg - 1) * fetchLim, fetchLim);
+        : (board.kind === 'doubanMusic'
+          ? await fetchDbMusicCollection(board.slug, (pg - 1) * fetchLim, fetchLim)
+          : await fetchDouban(board, (pg - 1) * fetchLim, fetchLim));
       const out = {
         cat, catName: CAT_NAME[cat] || cat, board: board.id, boardName: board.name,
         group: board.group || '', page: pg, hasMore: r.hasMore, total: r.total, via: r.via,

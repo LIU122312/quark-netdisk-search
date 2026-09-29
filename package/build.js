@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 一键组装 Windows 便携包：
- *   node package/build.js --pansou <pansou.exe> [--node <node.exe>] [--out <dir>]
+ *   node package/build.js --pansou <pansou.exe> [--node <node.exe>] [--out <dir>] [--games <games.json>]
  * 产出 <out>/quark-netdisk-search-<ver>/ 与同名 zip（含 Node 运行时，解压即用）。
  */
 const fs = require('fs');
@@ -16,6 +16,7 @@ const OUT = path.resolve(arg('out', path.join(ROOT, 'dist')));
 const PKG = path.join(OUT, NAME);
 const PANSOU = arg('pansou', '');
 const NODEEXE = arg('node', process.execPath);
+const GAMES = path.resolve(arg('games', path.join(ROOT, 'app', 'lib', 'games.json')));
 
 if (!PANSOU || !fs.existsSync(PANSOU)) {
   console.error('缺少 PanSou：node package/build.js --pansou <pansou.exe>');
@@ -29,10 +30,13 @@ if (fs.existsSync(PKG)) fs.rmSync(PKG, { recursive: true, force: true });
 mk(PKG);
 copy(PANSOU, path.join(PKG, 'app', 'pansou.exe'));
 ['server.js', 'rank.js', 'index.html'].forEach((f) => copy(path.join(ROOT, 'app', 'ui', f), path.join(PKG, 'app', 'ui', f)));
-['index.json', 'build-index.js', 'games.json', 'harvest-fzgamer.js'].forEach((f) => {
+['index.json', 'build-index.js', 'harvest-fzgamer.js'].forEach((f) => {
   const s = path.join(ROOT, 'app', 'lib', f);
   if (fs.existsSync(s)) copy(s, path.join(PKG, 'app', 'lib', f));
 });
+/* 游戏库是抓取产物，不一定在仓库里：用 --games <path> 指过来 */
+if (fs.existsSync(GAMES)) copy(GAMES, path.join(PKG, 'app', 'lib', 'games.json'));
+else console.warn('  ! 没找到 games.json（游戏栏目将只剩 Bangumi 源）：' + GAMES);
 mk(path.join(PKG, 'app', 'cache'));
 mk(path.join(PKG, 'logs'));
 copy(NODEEXE, path.join(PKG, 'runtime', 'node.exe'));

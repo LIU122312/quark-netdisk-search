@@ -15,6 +15,7 @@ const NAME = '资源聚合-' + VER;
 const OUT = path.resolve(arg('out', path.join(ROOT, 'dist')));
 const PKG = path.join(OUT, NAME);
 const PANSOU = arg('pansou', '');
+const PLAYERDIR = arg('player', '');
 const NODEEXE = arg('node', process.execPath);
 const GAMES = path.resolve(arg('games', path.join(ROOT, 'app', 'lib', 'games.json')));
 
@@ -29,7 +30,11 @@ const copy = (a, b) => { mk(path.dirname(b)); fs.copyFileSync(a, b); console.log
 if (fs.existsSync(PKG)) fs.rmSync(PKG, { recursive: true, force: true });
 mk(PKG);
 copy(PANSOU, path.join(PKG, 'app', 'pansou.exe'));
-['server.js', 'rank.js', 'index.html', 'home.js'].forEach((f) => copy(path.join(ROOT, 'app', 'ui', f), path.join(PKG, 'app', 'ui', f)));
+/* 界面的 js/html 全部拷过去：漏一个（比如在线播放的 player.js）软件里就会缺功能 */
+fs.readdirSync(path.join(ROOT, 'app', 'ui'))
+  .filter((f) => /\.(js|html)$/i.test(f) && fs.statSync(path.join(ROOT, 'app', 'ui', f)).isFile())
+  .sort()
+  .forEach((f) => copy(path.join(ROOT, 'app', 'ui', f), path.join(PKG, 'app', 'ui', f)));
 ['index.json', 'build-index.js', 'harvest-fzgamer.js'].forEach((f) => {
   const s = path.join(ROOT, 'app', 'lib', f);
   if (fs.existsSync(s)) copy(s, path.join(PKG, 'app', 'lib', f));
@@ -37,6 +42,25 @@ copy(PANSOU, path.join(PKG, 'app', 'pansou.exe'));
 /* 游戏库是抓取产物，不一定在仓库里：用 --games <path> 指过来 */
 if (fs.existsSync(GAMES)) copy(GAMES, path.join(PKG, 'app', 'lib', 'games.json'));
 else console.warn('  ! 没找到 games.json（游戏栏目将只剩 Bangumi 源）：' + GAMES);
+/* ---- 播放器：完整版整包带走（脚本 / 着色器 / 字体 / 便携配置全保留，不精简） ---- */
+if (PLAYERDIR && fs.existsSync(PLAYERDIR)) {
+  const dst = path.join(PKG, 'player');
+  const skip = new Set(['cache', '__pycache__']);
+  let n = 0;
+  const walk = (from, to) => {
+    mk(to);
+    for (const e of fs.readdirSync(from, { withFileTypes: true })) {
+      if (skip.has(e.name)) continue;
+      const a = path.join(from, e.name), b = path.join(to, e.name);
+      if (e.isDirectory()) walk(a, b);
+      else { fs.copyFileSync(a, b); n++; }
+    }
+  };
+  walk(PLAYERDIR, dst);
+  console.log('  + player/（完整播放器 ' + n + ' 个文件）');
+} else {
+  console.warn('  ! 没带播放器：加 --player <mpv 目录> 才会把播放器打进包里（不加就只能用本机已有的 mpv）');
+}
 mk(path.join(PKG, 'app', 'cache'));
 mk(path.join(PKG, 'logs'));
 copy(NODEEXE, path.join(PKG, 'runtime', 'node.exe'));

@@ -8,6 +8,8 @@ const API_HOST = '127.0.0.1';
 const API_PORT = 8888;
 const ROOT = __dirname;
 const rank = require('./rank');
+const online = require('./online-src');
+const player = require('./player');
 
 /* ===================== 在线增强：近似词补搜 + 额外在线源 ===================== */
 /* EXTRA_SOURCES 形如 name|https://host/api/search|query ，多个用逗号分隔；留空即关闭 */
@@ -359,6 +361,14 @@ function openUrl(rawUrl, mode) {
 }
 
 /* ===================== HTTP ===================== */
+function readBody(req) {
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; if (raw.length > 4e6) req.destroy(); });
+    req.on('end', () => { try { resolve(JSON.parse(raw || '{}')); } catch (e) { resolve({}); } });
+  });
+}
+
 function sendJson(res, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
@@ -475,6 +485,97 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  /* ===================== 在线影视：ApiCMS 采集聚合 + 内置 mpv 播放 ===================== */
+  if (u.pathname === '/api/online/search') {
+    const kw = (u.searchParams.get('kw') || '').trim();
+    if (!kw) return sendJson(res, { code: 1, error: '缺少关键词' });
+    const srcs = (u.searchParams.get('sources') || '').split(',').map((x) => x.trim()).filter(Boolean);
+    online.searchAll(kw, { refresh: u.searchParams.get('refresh') === '1', limit: parseInt(u.searchParams.get('limit') || '0', 10) || 0, sources: srcs })
+      .then((r) => sendJson(res, Object.assign({ code: 0 }, r)))
+      .catch((e) => sendJson(res, { code: 1, error: String((e && e.message) || e) }));
+    return;
+  }
+
+  if (u.pathname === '/api/online/list') {
+    return sendJson(res, { code: 0, sources: online.SOURCES.map((x) => ({ id: x.id, name: x.name, tag: x.tag })) });
+  }
+
+  if (u.pathname === '/api/online/sources') {
+    online.health(u.searchParams.get('kw') || '', u.searchParams.get('refresh') === '1')
+      .then((r) => sendJson(res, Object.assign({ code: 0 }, r)))
+      .catch((e) => sendJson(res, { code: 1, error: String((e && e.message) || e) }));
+    return;
+  }
+
+  if (u.pathname === '/api/online/detail') {
+    online.detail(u.searchParams.get('sid'), u.searchParams.get('id'))
+      .then((r) => sendJson(res, Object.assign({ code: 0 }, r)))
+      .catch((e) => sendJson(res, { code: 1, error: String((e && e.message) || e) }));
+    return;
+  }
+
+  /* 起播：按候选片源并发取流 → 预检分片 → 挑第一条真能播的交给 mpv */
+  if (u.pathname === '/api/online/play') {
+    readBody(req).then(async (b) => {
+      if (b.url) {
+        const r0 = await player.play({ url: b.url, title: b.title, hwnd: b.hwnd });
+        return sendJson(res, { code: r0.ok ? 0 : 1, error: r0.error || '', mode: r0.mode, pid: r0.pid,
+          playing: { name: b.name || '', sid: b.sid || '', url: b.url, epName: '', epCount: 0 },
+          probe: [], quality: '' });
+      }
+      const targets = (b.targets || []).filter((t) => t && t.sid && t.id).slice(0, 12);
+      if (!targets.length) return sendJson(res, { code: 1, error: '没有可用的片源' });
+      const epIdx = Math.max(0, parseInt(b.ep, 10) || 0);
+      /* 取详情要跟慢源抢时间：谁先回来先用谁，最多等 6.5 秒，剩下的在后台继续拿（不影响起播） */
+      const ds = [];
+      const all = Promise.all(targets.map((t) => online.detail(t.sid, t.id).then((d) => { if (d) ds.push(d); return d; }).catch(() => null)));
+      await Promise.race([all, new Promise((r) => setTimeout(r, 6500))]);
+      const cands = [];
+      ds.forEach((d) => {
+        if (!d) return;
+        const g = online.pickDirect(d.groups) || d.groups[0];
+        if (!g || !g.episodes.length) return;
+        const ep = g.episodes[Math.min(epIdx, g.episodes.length - 1)];
+        cands.push({ name: d.sidName, sid: d.sid, url: ep.url, epName: ep.name, epCount: g.episodes.length, direct: !!g.direct });
+      });
+      if (!cands.length) return sendJson(res, { code: 1, error: '这些来源都没有给出可用播放地址' });
+      const minP = Number(b.minP != null ? b.minP : (b.minW != null ? b.minW : b.minH)) || 0;
+      const pick = await online.pickPlayable(cands, { minP });
+      const chosen = pick.best || cands[0];
+      const r = await player.play({ url: chosen.url, title: b.title, hwnd: b.hwnd });
+      sendJson(res, {
+        code: r.ok ? 0 : 1, error: r.error || '', mode: r.mode, pid: r.pid,
+        playing: { name: chosen.name, sid: chosen.sid, url: chosen.url, epName: chosen.epName, epCount: chosen.epCount },
+        probe: (pick.cands || []).map((c) => ({ name: c.name, sid: c.sid, url: c.url, ok: c.ok === null ? null : !!c.ok, settled: c.ok !== null, ms: c.ms, why: c.why, res: c.res || null, q: online.resLabel(c.res), rt: online.resText(c.res), kbs: c.kbs || 0, need: c.need || 0, slow: !!c.slow })),
+        quality: online.resLabel(chosen.res) || (chosen.bw ? Math.round(chosen.bw / 1000) + 'k' : ''),
+        qualityText: online.resText(chosen.res), minP, belowFloor: !!chosen.belowFloor, res: chosen.res || null,
+        speedFallback: !!chosen.speedFallback, slow: !!chosen.slow, kbs: chosen.kbs || 0, need: chosen.need || 0,
+      });
+    });
+    return;
+  }
+  /* 单条线路复检（界面里「检测中」的线路拿它补结果，也可以在切线路前先验一下） */
+  if (u.pathname === '/api/online/probe') {
+    const url = u.searchParams.get('url') || '';
+    if (!online.isDirect(url)) return sendJson(res, { code: 1, error: '不是直链' });
+    online.probeStream(url, 9000).then((p) => sendJson(res, { code: p.ok ? 0 : 1, ok: !!p.ok, ms: p.ms, why: p.why,
+      res: p.res || null, q: online.resLabel(p.res), rt: online.resText(p.res), kbs: p.kbs || 0, need: p.need || 0, slow: !!p.slow }));
+    return;
+  }
+  if (u.pathname === '/api/player/info') { return sendJson(res, Object.assign({ code: 0 }, player.info())); }
+  if (u.pathname === '/api/player/status') {
+    player.status().then((x) => sendJson(res, Object.assign({ code: 0 }, x)));
+    return;
+  }
+  if (u.pathname === '/api/player/ctl') {
+    readBody(req).then((b) => player.ctl(b).then((r) => sendJson(res, Object.assign({ code: 0 }, r))));
+    return;
+  }
+  if (u.pathname === '/api/player/stop') {
+    player.stop().then((r) => sendJson(res, Object.assign({ code: 0 }, r)));
+    return;
+  }
+
   if (u.pathname === '/api/search' && req.method === 'GET') { handleSearchEnhanced(res, u); return; }
 
   if (req.url.startsWith('/api/')) return proxy(req, res);
@@ -486,20 +587,21 @@ const server = http.createServer((req, res) => {
     if (err) { res.writeHead(404); return res.end('not found'); }
     const ext = path.extname(full).toLowerCase();
     const type = ext === '.html' ? 'text/html; charset=utf-8' : ext === '.js' ? 'application/javascript; charset=utf-8' : ext === '.css' ? 'text/css; charset=utf-8' : 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': type });
+    /* 本地应用：静态文件一律不缓存，免得升级后界面还是旧的 */
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store, must-revalidate', Pragma: 'no-cache', Expires: '0' });
     res.end(buf);
   });
 });
 
 server.listen(UI_PORT, '127.0.0.1', () => {
   console.log('Quark search UI: http://127.0.0.1:' + UI_PORT + '  cache=' + Object.keys(checkStore).length);
-  /* 榜单预热：Bangumi 首次经 Clash 代理建连要十几秒，开机后台先拉一次，用户点开即热 */
+  /* 榜单预热：首次抓取要建连+拉数据，开机后台先拉一次，用户点开即热 */
   const warmDelay = (label, delay, fn) => setTimeout(() => {
     fn().then((r) => console.log('[rank warm] ' + label + ' ok ' + ((r.items || []).length) + ' 条 via=' + r.via))
         .catch((e) => console.log('[rank warm] ' + label + ' 失败: ' + e.message));
   }, delay);
   warmDelay('movie/豆瓣 不限', 800, () => rank.getFiltered('movie', 'db', [], [], 1, 24, false));
-  warmDelay('anime/Bangumi 不限', 1500, () => rank.getFiltered('anime', 'bgm', [], [], 1, 24, false));
+  warmDelay('anime/豆瓣榜单 9分以上', 1500, () => rank.getRank('anime', 'db_anime_9', 1, 24, false));
   warmDelay('tv/豆瓣 不限', 3000, () => rank.getFiltered('tv', 'db', [], [], 1, 24, false));
   warmDelay('movie/Top250', 6000, () => rank.getRank('movie', 'db_top250', 1, 24, false));
   warmDelay('anime/豆瓣池', 9000, () => rank.getFiltered('anime', 'db', [], [], 1, 24, false));

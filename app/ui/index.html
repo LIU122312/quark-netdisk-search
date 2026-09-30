@@ -336,6 +336,116 @@
     .welcome { min-height:auto; padding-top:22px; }
     .bar { margin-top:8px; }
   }
+
+/* ===== 在线影视 ===== */
+body.online-on #home, body.online-on .srcbar, body.online-on .toolbar, body.online-on #list{ display:none !important; }
+body.mode-online #home, body.mode-online #list, body.mode-online .toolbar{ display:none !important; }
+body.mode-online{ --acc:#e53637; }
+.olsrcbar{ flex:1 1 100%; display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px; }
+.olbar{ flex:1 1 100%; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.oltitle{ font-size:15px; font-weight:700; color:var(--fg); letter-spacing:.5px; }
+.mswitch{ display:inline-flex; border:1px solid var(--line2); border-radius:9px; overflow:hidden; background:var(--panel); }
+.mswitch button{ border:0; background:transparent; color:var(--fg2); font-size:13px; padding:8px 14px; cursor:pointer; box-shadow:none; transform:none; }
+.mswitch button + button{ border-left:1px solid var(--line); }
+.mswitch button.on{ background:var(--acc); color:#fff; font-weight:600; }
+.pickpop{ position:fixed; z-index:9999; background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:10px; box-shadow:0 18px 44px rgba(0,0,0,.55); min-width:190px; }
+.pickpop .ppq{ font-size:12.5px; color:var(--fg2); margin-bottom:8px; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pickpop button{ display:block; width:100%; margin:0 0 6px; text-align:center; }
+.olmin{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--fg3); white-space:nowrap; }
+.olmin select{ height:34px; padding:0 8px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--fg); font-size:13px; outline:none; }
+.olsrcbar .lb{ font-size:12px; color:var(--fg3); margin-right:2px; }
+.osrcb{ padding:5px 11px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg2); font-size:12px; cursor:pointer; }
+.osrcb:hover{ border-color:var(--acc); color:var(--fg); }
+.osrcb.on{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.osrcb i{ font-style:normal; opacity:.7; font-size:11px; }
+#online{ padding-bottom:48px; }
+.olhead{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 18px; }
+.olsearch{ position:relative; flex:1 1 340px; display:flex; align-items:center; }
+.olsearch .ico{ position:absolute; left:12px; width:16px; height:16px; fill:none; stroke:var(--fg3); stroke-width:1.8; pointer-events:none; }
+.olsearch input{ width:100%; padding:11px 14px 11px 37px; border-radius:8px; border:1px solid var(--line); background:rgba(128,128,128,.06); color:var(--fg); font-size:13.5px; }
+.olsearch input:focus{ outline:none; border-color:var(--acc); }
+.olmeta{ flex:1 1 100%; font-size:12px; color:var(--fg3); }
+.olgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:18px 14px; }
+.ocard{ cursor:pointer; }
+.oimg{ position:relative; aspect-ratio:2/3; border-radius:8px; overflow:hidden; background:rgba(128,128,128,.14); }
+.oimg img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .35s; }
+.ocard:hover .oimg img{ transform:scale(1.06); }
+.onoimg{ display:grid; place-items:center; height:100%; color:var(--fg3); font-size:12px; }
+.oep{ position:absolute; right:6px; bottom:6px; padding:2px 6px; border-radius:4px; background:rgba(0,0,0,.62); color:#fff; font-size:11px; }
+.oname{ margin-top:8px; font-size:13px; line-height:1.35; }
+.osub,.osrc{ font-size:11.5px; color:var(--fg3); margin-top:2px; }
+.osrc{ color:var(--acc2); font-size:11px; }
+.olempty{ grid-column:1/-1; padding:32px 2px; color:var(--fg3); font-size:13px; }
+.oldhead{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.oldhint{ font-size:12px; color:var(--fg3); }
+.oldwrap{ display:flex; gap:20px; align-items:flex-start; }
+.oldpic{ flex:0 0 168px; aspect-ratio:2/3; border-radius:8px; overflow:hidden; background:rgba(128,128,128,.14); }
+.oldpic img{ width:100%; height:100%; object-fit:cover; display:block; }
+.oldinfo{ flex:1 1 auto; min-width:0; }
+.oldinfo h2{ margin:0 0 6px; font-size:19px; font-weight:600; }
+.oldmeta{ font-size:12.5px; color:var(--fg3); margin-bottom:10px; }
+.oldintro{ font-size:13px; line-height:1.7; color:var(--fg2); margin:0 0 16px; max-height:5.4em; overflow:auto; }
+.olsrcline{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+.olsl{ font-size:12px; color:var(--fg3); }
+.ochip{ display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--fg2); font-size:12.5px; cursor:pointer; }
+.ochip.on{ border-color:var(--acc); color:#fff; background:var(--acc); }
+.ochip i{ font-style:normal; font-size:10.5px; padding:1px 5px; border-radius:3px; }
+.odirect{ background:rgba(90,200,120,.18); color:#4fbf72; }
+.ochip.on .odirect{ background:rgba(255,255,255,.22); color:#fff; }
+.oweb{ background:rgba(180,180,180,.18); color:var(--fg3); }
+.olephead{ font-size:12.5px; color:var(--fg3); margin-bottom:10px; }
+.olephead b.warn{ color:#d99a2b; }
+.olepgrid{ display:flex; flex-wrap:wrap; gap:8px; max-height:260px; overflow:auto; }
+.oepb{ padding:6px 12px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--fg2); font-size:12.5px; cursor:pointer; }
+.oepb:hover{ border-color:var(--acc); color:var(--fg); }
+.oepb.on{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.olplay{ margin:0 0 20px; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:rgba(0,0,0,.35); }
+.olpbar{ display:flex; align-items:center; gap:10px; padding:9px 12px; font-size:12.5px; color:var(--fg2); border-bottom:1px solid var(--line); }
+.olpdot{ width:7px; height:7px; border-radius:50%; background:#e53637; box-shadow:0 0 0 3px rgba(229,54,55,.18); flex:0 0 auto; }
+.olpSrc{ color:var(--fg3); font-size:12px; }
+.olpbar #olpClose{ margin-left:auto; }
+.olstage{ position:relative; width:100%; aspect-ratio:16/9; background:#000; display:grid; place-items:center; }
+.olstage-hint{ color:#9aa0b5; font-size:13px; text-align:center; padding:0 20px; }
+.olctrl{ display:flex; align-items:center; gap:10px; padding:9px 12px; border-top:1px solid var(--line); flex-wrap:nowrap; }
+.olctrl input[type=range]{ flex:1 1 120px; min-width:80px; }
+.olctrl .oltime{ flex:0 0 auto; white-space:nowrap; }
+.olctrl #olVol{ flex:0 0 92px; }
+.oltime{ font-size:12px; color:var(--fg3); font-variant-numeric:tabular-nums; min-width:104px; text-align:center; }
+
+/* ===== 全屏播放：整窗铺满画面，只留上面标题带 + 下面控制带 ===== */
+/* 播放中：顶栏跟着页面滚走。画面是原生子窗口，永远盖在网页上面，
+   顶栏再吸顶也会被画面挡掉，不如让它老老实实滚出去。 */
+body.olplay-on header.topbar{ position:static; }
+body.olplay-on .srcbar{ display:none; }
+body.olfs{ padding-left:0; overflow:hidden; }
+body.olfs .side, body.olfs header.topbar, body.olfs .srcbar, body.olfs .olhead,
+body.olfs .toolbar, body.olfs #home, body.olfs #list, body.olfs #rank, body.olfs #settings,
+body.olfs #olGrid, body.olfs #olDetail, body.olfs .olprobe{ display:none !important; }
+body.olfs main.wrap{ padding:0; margin:0; max-width:none; }
+body.olfs #online{ padding:0; }
+body.olfs .olplay{ margin:0; border:0; border-radius:0; background:#000; overflow:visible; }
+body.olfs .olpbar{ position:fixed; left:0; right:0; top:0; height:40px; z-index:70;
+  background:rgba(6,6,20,.94); border-bottom:1px solid rgba(255,255,255,.08); color:#e9e9f4; padding:0 12px; }
+body.olfs .olctrl{ position:fixed; left:0; right:0; bottom:0; height:56px; z-index:70;
+  background:rgba(6,6,20,.94); border-top:1px solid rgba(255,255,255,.08); padding:0 14px; }
+body.olfs .olstage{ position:fixed; left:0; right:0; top:40px; bottom:56px; width:auto; height:auto; aspect-ratio:auto; }
+body.olfs .olpbar, body.olfs .olctrl, body.olfs .olpbar button, body.olfs .olctrl button{ color:#e9e9f4; }
+body.olfs .olpbar button, body.olfs .olctrl button{ border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.06); }
+body.olfs .olpbar button:hover, body.olfs .olctrl button:hover{ background:var(--acc); border-color:var(--acc); color:#fff; }
+body.olfs .olctrl .oltime, body.olfs .olpbar .olpSrc{ color:#a9a9c4; }
+body.olfs .olctrl input[type=range]{ accent-color:var(--acc); }
+.olprobe{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px 12px; border-top:1px solid var(--line); }
+.olprobe .lb{ font-size:12px; color:var(--fg3); }
+.opb.slow{ border-color:rgba(230,160,60,.55); color:#e0a63c; }
+.opb{ padding:4px 9px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg2); font-size:11.5px; cursor:pointer; }
+.opb i{ font-style:normal; opacity:.75; }
+.opb.ok{ border-color:rgba(90,200,120,.45); color:#4fbf72; }
+.opb.ok:hover{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.opb.bad{ border-color:var(--line2); color:var(--tBad); }
+.opb.bad:hover{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.opb.wait{ opacity:.75; }
+.opb.wait:hover{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.olpTitle{ font-weight:600; color:var(--fg); }
 </style>
 <script>(function(){try{var t=localStorage.getItem('qs4_theme')||'dark';var m=(t==='auto')?((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'):(t==='light'?'light':'dark');document.documentElement.setAttribute('data-theme',m);var u=localStorage.getItem('qs4_bg');if(u){var e=document.documentElement.style;e.setProperty('--bgImg',/^(data:|https?:|blob:)/.test(u)?('url("'+u.replace(/"/g,'%22')+'")'):u);var o=parseInt(localStorage.getItem('qs4_bgOp'),10);if(isNaN(o))o=40;e.setProperty('--bgOp',String(o/100));var b=parseInt(localStorage.getItem('qs4_bgBlur'),10);if(isNaN(b))b=0;e.setProperty('--bgBlur',b+'px');}var dn=(localStorage.getItem('qs4_density')||'std');if(dn==='tight'||dn==='cozy')document.documentElement.setAttribute('data-density',dn);}catch(err){}})();</script>
 <style id="v3">
@@ -580,6 +690,10 @@ svg{ flex:0 0 auto; }
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
         <input type="text" id="kw" placeholder="搜片名 / 剧名 / 游戏 / 书名，回车搜索（例：庆余年、双人成行、三体）" autofocus>
       </div>
+      <div class="mswitch" id="modeSw" role="group" aria-label="搜索来源">
+        <button type="button" data-mode="pan" class="on">网盘</button>
+        <button type="button" data-mode="online">在线</button>
+      </div>
       <button id="go" class="primary">搜索</button>
       <button id="clear">清空</button>
       <button id="optToggle" aria-expanded="false">筛选<span class="caret">▾</span></button>
@@ -613,6 +727,46 @@ svg{ flex:0 0 auto; }
 <div class="srcbar"><div class="wrap"><i class="src" id="src">源状态加载中...</i></div></div>
 <main class="wrap">
   <section id="home" class="home"></section>
+  <section id="online" hidden>
+    <div class="olhead">
+      <div class="olbar">
+      <span class="oltitle">在线资源</span>
+      <label class="olmin" title="画质下限：按像素量分档（1920×1080≈2.1M 为 1080P 档，1080×608≈0.66M 只算 720P 档）。不达标的线路不选，除非没有更好的。">
+        <span>画质</span>
+        <select id="olMinW">
+          <option value="1400000">1080P 档</option>
+          <option value="6000000">4K 档</option>
+          <option value="500000">720P 档</option>
+          <option value="0">不限</option>
+        </select>
+      </label>
+      </div>
+      <div class="olsrcbar" id="olSrcBar"></div>
+      <div class="olmeta" id="olMeta">数据来自公开采集接口，内置播放器直接播放，不用跳浏览器。</div>
+    </div>
+    <div class="olplay" id="olPlay" hidden>
+      <div class="olpbar">
+        <span class="olpdot"></span>
+        <span id="olpTitle">—</span>
+        <span class="olpSrc" id="olpSrc"></span>
+        <button class="small" id="olpClose">关闭播放器</button>
+      </div>
+      <div class="olstage" id="olStage"><div class="olstage-hint" id="olStageHint"></div></div>
+      <div class="olctrl">
+        <button class="small" id="olPrev">上一集</button>
+        <button class="small" id="olToggle">暂停</button>
+        <button class="small" id="olNext">下一集</button>
+        <input type="range" id="olSeek" min="0" max="1000" value="0" step="1">
+        <span class="oltime" id="olTime">00:00 / 00:00</span>
+        <button class="small" id="olMute">静音</button>
+        <input type="range" id="olVol" min="0" max="100" value="100" step="1">
+        <button class="small" id="olFs">全屏</button>
+      </div>
+      <div class="olprobe" id="olProbe"></div>
+    </div>
+    <div class="olgrid" id="olGrid"><div class="olempty">在上面搜索想看的片，点海报即可直接播放。</div></div>
+    <div class="oldetail" id="olDetail" hidden></div>
+  </section>
   <div class="toolbar">
     <div class="meta" id="meta">输入片名开始搜索。结果 = 本地精选库（人工整理、每日更新）+ 在线 PanSou（TG 频道与插件并发）。</div>
     <div class="qbox">
@@ -852,12 +1006,25 @@ function applyDensity() {
   const s = document.getElementById('setDensity'); if (s) s.value = (d === 'tight' || d === 'cozy') ? d : 'std';
 }
 function mqDark() { try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) { return true; } }
+/* 原生窗口（标题栏 / 边框）配色：跟当前主题同色发给桌面外壳；浏览器里是空操作 */
+function shellPostRaw(m) { try { if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) window.chrome.webview.postMessage(m); } catch (e) {} }
+function pushShellChrome() {
+  try {
+    const cs = getComputedStyle(document.documentElement);
+    let cap = (cs.getPropertyValue('--head') || '').trim();
+    if (!/^#[0-9a-fA-F]{6}$/.test(cap)) cap = '#070720';
+    const r = parseInt(cap.substr(1, 2), 16), g = parseInt(cap.substr(3, 2), 16), b = parseInt(cap.substr(5, 2), 16);
+    const dark = (0.2126 * r + 0.7152 * g + 0.0722 * b) < 140;
+    shellPostRaw('chrome:' + cap + ',' + (dark ? '#ffffff' : '#1b1b1b') + ',' + (dark ? 1 : 0) + ',' + cap);
+  } catch (e) {}
+}
 function themePref() { return lsGet(THEME_KEY, 'dark'); }
 function applyTheme() {
   const t = themePref();
   let mode = (t === 'auto') ? (mqDark() ? 'dark' : 'light') : (t === 'dark' ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', mode);
   const s = document.getElementById('setTheme'); if (s) s.value = t;
+  pushShellChrome();
   return mode;
 }
 function applyBg() {
@@ -1154,6 +1321,14 @@ async function loadSrc() {
 async function search() {
   const kw = $('kw').value.trim();
   if (!kw) return;
+  /* 顶部的「网盘 / 在线」切换：在线模式下交给在线资源模块，网盘模式走原来的流程 */
+  if (window.QS_MODE === 'online') {
+    if (SET.rememberKw) { try { localStorage.setItem('qs4_last', kw); } catch (e) {} }
+    if (window.Online) return window.Online.search(kw);
+    window.addEventListener('load', function () { if (window.Online) window.Online.search(kw); }, { once: true });
+    return 0;
+  }
+  if (window.Online) window.Online.hide();
   if (SET.rememberKw) { try { localStorage.setItem('qs4_last', kw); } catch (e) {} }
   if (!SET.useLib && !SET.useOnline) {
     $('meta').innerHTML = '<span class="bad">两个搜索源都关掉了</span>：到「设置 → 常用设置」里至少打开一个（本地精选库 / PanSou 在线）。';
@@ -1228,7 +1403,7 @@ document.addEventListener('click', (e) => {
   if (f3) { tog(curSel().genres, f3.getAttribute("data-fgenre")); rankTabs(); rankReload(); return; }
   if (t.closest && t.closest("[data-fclear]")) { const s0 = curSel(); s0.regions = []; s0.genres = []; rankTabs(); rankReload(); return; }
   const rc = t.closest && t.closest("[data-rsearch]");
-  if (rc) { rankSearch(rc.getAttribute("data-rsearch")); return; }
+  if (rc) { pickSearch(rc.getAttribute("data-rsearch"), rc); return; }
   const rcat = t.closest && t.closest("[data-rcat]");
   if (rcat) { RANK.cat = rcat.getAttribute("data-rcat"); RANK.board = ""; RANK.page = 1; RANK.n = 0; rankTabs(); loadRank(false); return; }
   const rb = t.closest && t.closest("[data-rboard]");
@@ -1260,7 +1435,7 @@ $('sortSel').addEventListener('change', function () {
 })();
 $('checkAll').onclick = () => { if (rows.length) verify(true); };
 
-/* ===================== 排行榜（Bangumi 动画 + 豆瓣 电影/剧集） ===================== */
+/* ===================== 排行榜（豆瓣动漫/电影/剧集 + 起点/网易云/Steam 等） ===================== */
 const RANK = { cat: "anime", board: "", page: 1, hasMore: false, cats: null, n: 0, gen: 0, sel: {} };
 function curSel() {
   if (!RANK.sel[RANK.cat]) RANK.sel[RANK.cat] = { src: "", regions: [], genres: [] };
@@ -1347,7 +1522,7 @@ function rankCard(it) {
   const fb = it.coverFallback ? "/api/cover?u=" + encodeURIComponent(it.coverFallback) : "";
   const q = escapeHtml(it.title);
   return '<div class="rcard">' +
-    '<div class="rposter" data-rsearch="' + q + '" tabindex="0" role="button" aria-label="搜索 ' + q + ' 的网盘资源" title="点封面直接搜索网盘资源（键盘 Enter 也行）">' +
+    '<div class="rposter" data-rsearch="' + q + '" tabindex="0" role="button" aria-label="搜索 ' + q + ' 的资源" title="点封面搜资源：可以选网盘或在线（键盘 Enter 也行）">' +
       (img ? '<img loading="lazy" src="' + img + '"' + (fb ? ' data-fb="' + fb + '"' : '') + ' alt="">' : '<div class="rnoimg">无封面</div>') +
       '<span class="rrank">' + it.rank + "</span>" +
       (it.score ? '<span class="rscore">' + it.score + "</span>" : "") +
@@ -1514,7 +1689,7 @@ async function loadRank(append) {
     if (!append) rankFillViewport();
   } catch (e) {
     if (my !== RANK.gen) return;
-    $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（Bangumi/豆瓣 源需 Clash 代理可用）";
+    $("rankInfo").innerHTML = '<span class="bad">抓取失败：' + escapeHtml(e.message) + "</span>（豆瓣为国内直连；Bangumi 需能连上 api.bgm.tv）";
   }
 }
 
@@ -1536,6 +1711,53 @@ function shortTitle(t) {
   const cut = s.split(/[\s·・:：～~—–|]+/).filter(Boolean)[0];
   return (cut || s).trim();
 }
+
+/* 榜单作品：点了先问一句「搜网盘还是搜在线」，选完再搜 */
+function pickSearch(title, anchor) {
+  const old = document.querySelector('.pickpop');
+  if (old) old.remove();
+  const box = document.createElement('div');
+  box.className = 'pickpop';
+  box.innerHTML = '<div class="ppq"></div>'
+    + '<button type="button" class="primary" data-pick="pan">搜网盘资源</button>'
+    + '<button type="button" data-pick="online">搜在线资源</button>';
+  box.querySelector('.ppq').textContent = title;
+  box.setAttribute('data-title', title);
+  document.body.appendChild(box);
+  let x = 20, y = 80;
+  if (anchor && anchor.getBoundingClientRect) {
+    const r = anchor.getBoundingClientRect();
+    x = r.left + r.width / 2 - box.offsetWidth / 2;
+    y = r.bottom + 8;
+  }
+  x = Math.max(10, Math.min(window.innerWidth - box.offsetWidth - 10, x));
+  y = Math.max(10, Math.min(window.innerHeight - box.offsetHeight - 10, y));
+  box.style.left = x + 'px';
+  box.style.top = y + 'px';
+}
+
+document.addEventListener("click", function (e) {
+  const box = e.target.closest && e.target.closest('.pickpop');
+  if (box) {
+    const b = e.target.closest('[data-pick]');
+    if (!b) return;
+    const title = box.getAttribute('data-title') || '';
+    const mode = b.getAttribute('data-pick');
+    box.remove();
+    if (mode === 'online') {
+      if (window.qsSetMode) window.qsSetMode('online', false);
+      $('kw').value = title;
+      if (!$('rank').hidden) toggleRank(false);
+      if (window.Online) { window.Online.show(); window.Online.search(title); }
+    } else {
+      if (window.qsSetMode) window.qsSetMode('pan', false);
+      rankSearch(title);
+    }
+    return;
+  }
+  const open = document.querySelector('.pickpop');
+  if (open && !(e.target.closest && e.target.closest('.pickpop'))) open.remove();
+}, true);
 
 async function rankSearch(title) {
   /* 点了搜资源就直接收起榜单，不用再手动按 Esc */
@@ -1603,11 +1825,59 @@ rankHash();
     /* 键盘可达：海报卡（div[data-rsearch]）Enter / 空格等同点击 */
     if ((e.key === "Enter" || e.key === " ") && tag !== "input" && tag !== "textarea") {
       const k = e.target && e.target.closest && e.target.closest("[data-rsearch]");
-      if (k && k.className.indexOf("rposter") >= 0) { e.preventDefault(); rankSearch(k.getAttribute("data-rsearch")); return; }
+      if (k && k.className.indexOf("rposter") >= 0) { e.preventDefault(); pickSearch(k.getAttribute("data-rsearch"), k); return; }
     }
     if (e.key === "/" && tag !== "input" && tag !== "textarea") { e.preventDefault(); $("kw").focus(); }
   });
 })();
+/* ===================== 搜索来源：网盘 / 在线 ===================== */
+(function () {
+  const sw = $("modeSw");
+  let mode = "pan";
+  try { mode = localStorage.getItem("qs4_mode") === "online" ? "online" : "pan"; } catch (e) { }
+
+  function paint() {
+    document.body.classList.toggle("mode-online", mode === "online");
+    if (sw) {
+      const bs = sw.querySelectorAll("button[data-mode]");
+      for (let i = 0; i < bs.length; i++) bs[i].classList.toggle("on", bs[i].getAttribute("data-mode") === mode);
+    }
+    const kw = $("kw");
+    if (kw) kw.placeholder = mode === "online"
+      ? "搜片名 / 剧名 / 演员，在线直接播放（例：流浪地球、狂飙、庆余年）"
+      : "搜片名 / 剧名 / 游戏 / 书名，回车搜索（例：庆余年、双人成行、三体）";
+    $("go").textContent = mode === "online" ? "在线搜索" : "搜索";
+  }
+
+  /* run=false 只换状态（榜单里的「搜在线」会自己发起搜索，不重复触发） */
+  function setMode(m, run) {
+    mode = m === "online" ? "online" : "pan";
+    window.QS_MODE = mode;
+    try { localStorage.setItem("qs4_mode", mode); } catch (e) { }
+    paint();
+    if (run === false) return;
+    const q = ($("kw").value || "").trim();
+    if (mode === "online") {
+      if (window.Online) { window.Online.show(); if (q) window.Online.search(q); }
+    } else {
+      if (window.Online) window.Online.hide();
+      if (q) search();
+      else $("list").innerHTML = "";
+      if (window.qsSyncHome) window.qsSyncHome();
+    }
+  }
+  window.qsSetMode = setMode;
+  if (sw) sw.addEventListener("click", function (e) {
+    const b = e.target && e.target.closest ? e.target.closest("button[data-mode]") : null;
+    if (!b) return;
+    const m = b.getAttribute("data-mode");
+    if (m === mode) return;
+    setMode(m);
+  });
+  window.QS_MODE = mode;
+  paint();
+})();
+
 /* ===================== 深链（?q=）与欢迎空态 ===================== */
 (function () {
   const HINTS = [["庆余年", "剧集"], ["双人成行", "游戏"], ["三体", "小说"], ["宫崎骏", "电影"], ["周杰伦", "音乐"]];
@@ -1626,7 +1896,7 @@ rankHash();
   }
   document.addEventListener("click", function (e) {
     const t = e.target.closest && e.target.closest("[data-q]");
-    if (t) { $("kw").value = t.getAttribute("data-q"); search(); }
+    if (t) { pickSearch(t.getAttribute("data-q"), t); }
   });
   $("clear").addEventListener("click", function () { setTimeout(welcome, 0); });
   const q0 = new URLSearchParams(location.search).get("q");
@@ -1887,5 +2157,6 @@ rankHash();
 })();
 </script>
 <script src="home.js"></script>
+<script src="online.js"></script>
 </body>
 </html>

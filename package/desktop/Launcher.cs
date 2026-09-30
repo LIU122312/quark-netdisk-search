@@ -329,99 +329,43 @@ namespace ZiyuanJuhe
     /* ===================== 主窗口（无边框 + 网页自带窗口按钮） ===================== */
     internal sealed class MainForm : Form
     {
-        /* 注入到页面里的窗口控件：拖标题栏、最小化/最大化/关闭、跟随主题换底色。
-           只在桌面外壳里注入，浏览器模式打开时页面完全不变。 */
-        private const string INJECT_JS = @"
-(function () {
-  if (window.__zyjh) return;
-  window.__zyjh = 1;
-  function send(m) { try { window.chrome.webview.postMessage(m); } catch (e) { } }
-  function bg() {
-    try {
-      var v = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-      if (v) send('bg:' + v);
-    } catch (e) { }
-  }
-  var st = document.createElement('style');
-  st.textContent =
-    '.wctl{margin-left:8px;padding-left:10px;border-left:1px solid var(--line2);display:flex;gap:2px;align-items:center}'
-    + '.wctl button{width:34px;height:28px;padding:0;border-radius:6px;background:transparent;'
-    + 'border:1px solid transparent;color:var(--fg3);font-size:12px;line-height:1;display:grid;'
-    + 'place-items:center;box-shadow:none;transform:none;touch-action:manipulation}'
-    + '.wctl button:hover{background:var(--btnH);color:var(--fg);border-color:var(--line)}'
-    + '.wctl button.cls:hover{background:rgba(255,123,114,.16);color:var(--bad);border-color:rgba(255,123,114,.4)}';
-  function css() { (document.head || document.documentElement).appendChild(st); }
-  function mk(html, cls, label, msg) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = cls || '';
-    b.title = label;
-    b.setAttribute('aria-label', label);
-    b.innerHTML = html;
-    b.addEventListener('click', function (e) { e.stopPropagation(); send(msg); });
-    return b;
-  }
-  function build(tries) {
-    if (document.querySelector('.wctl')) return;
-    var brand = document.querySelector('header.topbar .row') || document.querySelector('header .row');
-    if (!brand) {
-      if ((tries || 0) < 25) setTimeout(function () { build((tries || 0) + 1); }, 200);
-      return;
-    }
-    var box = document.createElement('div');
-    box.className = 'wctl';
-    box.appendChild(mk('&#x2212;', '', '最小化', 'min'));
-    box.appendChild(mk('&#x25A1;', '', '最大化 / 还原', 'max'));
-    box.appendChild(mk('&#x2715;', 'cls', '关闭', 'close'));
-    brand.appendChild(box);
-    var hd = document.querySelector('header');
-    if (hd) {
-      hd.addEventListener('mousedown', function (e) {
-        if (e.button !== 0) return;
-        var t = e.target;
-        if (!t || !t.closest) return;
-        if (t.closest('button') || t.closest('input') || t.closest('select') || t.closest('a') || t.closest('label')) return;
-        send('drag');
-      });
-      hd.addEventListener('dblclick', function (e) {
-        var t = e.target;
-        if (!t || !t.closest) return;
-        if (t.closest('button') || t.closest('input') || t.closest('select') || t.closest('a')) return;
-        send('max');
-      });
-    }
-  }
-  try { new MutationObserver(bg).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) { }
-  function boot() { css(); build(); bg(); if (document.querySelector('.wctl')) send('hello'); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-})();
-";
         private const int WM_NCHITTEST = 0x0084;
         private const int HTCLIENT = 1, HTCAPTION = 2, HTLEFT = 10, HTRIGHT = 11, HTTOP = 12;
         private const int HTTOPLEFT = 13, HTTOPRIGHT = 14, HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
-        private const int RESIZE_BORDER = 6;
+        private const int RESIZE_BORDER = 0;
 
         [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+        /* 原生标题栏配色：DwmSetWindowAttribute（Win11 22000+ 支持 34 边框 / 35 标题栏 / 36 文字） */
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hWnd, int attr, ref int value, int size);
 
         private readonly Label statusLabel;
         private WebView2 web;
         private bool closing;
         private bool pageReady;
         private Panel fallbackBar;
+        /* 内置播放器的画面承载窗口：mpv 用 --wid 直接画在这块原生子窗口上，不弹外部播放器 */
+        private Panel stage;
+        private string stageSpec = "";
+        private bool stageShown;
+        /* 进全屏播放前窗口是不是已经最大化了：退出全屏时还原回原来的样子 */
+        private bool wasMaximized;
 
         internal MainForm()
         {
             this.Text = Program.APP_NAME;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.Padding = new Padding(RESIZE_BORDER);
+            /* 原生标题栏：最小化 / 最大化 / 关闭 用 Windows 自己的那套（自绘那套在隐藏顶栏时还会跟着消失） */
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
+            this.Padding = new Padding(0);
             this.ClientSize = new Size(1320, 880);
             this.MinimumSize = new Size(900, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(243, 246, 251);
+            this.BackColor = Color.FromArgb(7, 7, 32);
             this.Font = new Font("Microsoft YaHei UI", 10f);
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
             catch (Exception) { }
@@ -429,39 +373,12 @@ namespace ZiyuanJuhe
             statusLabel = new Label();
             statusLabel.Dock = DockStyle.Fill;
             statusLabel.TextAlign = ContentAlignment.MiddleCenter;
-            statusLabel.ForeColor = Color.FromArgb(85, 96, 112);
+            statusLabel.ForeColor = Color.FromArgb(198, 202, 218);
             statusLabel.Text = "正在启动 " + Program.APP_NAME + " ...";
+            statusLabel.BackColor = Color.FromArgb(7, 7, 32);
             this.Controls.Add(statusLabel);
             this.Shown += this.OnShown;
             this.FormClosing += this.OnClosing;
-        }
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == WM_NCHITTEST)
-            {
-                base.WndProc(ref m);
-                if (m.Result == (IntPtr)HTCLIENT)
-                {
-                    int sx = (short)((long)m.LParam & 0xFFFF);
-                    int sy = (short)(((long)m.LParam >> 16) & 0xFFFF);
-                    Point c = this.PointToClient(new Point(sx, sy));
-                    bool left = c.X <= RESIZE_BORDER;
-                    bool right = c.X >= this.ClientSize.Width - RESIZE_BORDER;
-                    bool top = c.Y <= RESIZE_BORDER;
-                    bool bottom = c.Y >= this.ClientSize.Height - RESIZE_BORDER;
-                    if (top && left) m.Result = (IntPtr)HTTOPLEFT;
-                    else if (top && right) m.Result = (IntPtr)HTTOPRIGHT;
-                    else if (bottom && left) m.Result = (IntPtr)HTBOTTOMLEFT;
-                    else if (bottom && right) m.Result = (IntPtr)HTBOTTOMRIGHT;
-                    else if (left) m.Result = (IntPtr)HTLEFT;
-                    else if (right) m.Result = (IntPtr)HTRIGHT;
-                    else if (top) m.Result = (IntPtr)HTTOP;
-                    else if (bottom) m.Result = (IntPtr)HTBOTTOM;
-                }
-                return;
-            }
-            base.WndProc(ref m);
         }
 
         private void OnClosing(object sender, FormClosingEventArgs e)
@@ -500,6 +417,29 @@ namespace ZiyuanJuhe
             catch (Exception) { }
         }
 
+        private void SetFullscreen(bool on)
+        {
+            try
+            {
+                if (on)
+                {
+                    if (this.WindowState == FormWindowState.Minimized) this.WindowState = FormWindowState.Normal;
+                    wasMaximized = (this.WindowState == FormWindowState.Maximized);
+                    if (!wasMaximized)
+                    {
+                        Screen sc = Screen.FromControl(this);
+                        this.MaximizedBounds = sc.WorkingArea;
+                        this.WindowState = FormWindowState.Maximized;
+                    }
+                }
+                else if (!wasMaximized && this.WindowState == FormWindowState.Maximized)
+                {
+                    this.WindowState = FormWindowState.Normal;
+                }
+            }
+            catch (Exception) { }
+        }
+
         private void SetChromeColor(string hex)
         {
             try
@@ -512,6 +452,41 @@ namespace ZiyuanJuhe
                 if (fallbackBar != null) fallbackBar.BackColor = c;
             }
             catch (Exception) { }
+        }
+
+        /* spec = "标题栏色,文字色,用深色(0/1),边框色"（页面按当前主题算好发过来，标题栏/边框跟页面同一套颜色） */
+        private void ApplyChrome(string spec)
+        {
+            try
+            {
+                string[] p = spec.Split(',');
+                if (p.Length < 2) return;
+                Color cap = ColorTranslator.FromHtml(p[0].Trim());
+                Color txt = ColorTranslator.FromHtml(p[1].Trim());
+                bool dark = (p.Length < 3) ? true : (p[2].Trim() == "1");
+                Color bd = cap;
+                if (p.Length >= 4 && p[3].Trim().Length == 7) bd = ColorTranslator.FromHtml(p[3].Trim());
+                this.BackColor = cap;
+                if (statusLabel != null) statusLabel.BackColor = cap;
+                if (fallbackBar != null) fallbackBar.BackColor = cap;
+                if (!this.IsHandleCreated) return;
+                int v = dark ? 1 : 0;
+                DwmSetWindowAttribute(this.Handle, 20, ref v, 4);
+                v = cap.R | (cap.G << 8) | (cap.B << 16);
+                DwmSetWindowAttribute(this.Handle, 35, ref v, 4);
+                v = txt.R | (txt.G << 8) | (txt.B << 16);
+                DwmSetWindowAttribute(this.Handle, 36, ref v, 4);
+                v = bd.R | (bd.G << 8) | (bd.B << 16);
+                DwmSetWindowAttribute(this.Handle, 34, ref v, 4);
+            }
+            catch (Exception) { }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            /* 页面还没报主题过来时的兜底：跟深色侧栏同色，免得开机先闪一条白标题栏 */
+            ApplyChrome("#070720,#ffffff,1,#070720");
         }
 
         private void OnWebMessage(object sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -531,6 +506,80 @@ namespace ZiyuanJuhe
             if (msg == "max") { ToggleMax(); return; }
             if (msg == "close") { this.Close(); return; }
             if (msg.StartsWith("bg:")) { SetChromeColor(msg.Substring(3)); return; }
+            if (msg.StartsWith("chrome:")) { ApplyChrome(msg.Substring(7)); return; }
+            if (msg.StartsWith("video:")) { ShowStage(msg.Substring(6)); return; }
+            if (msg == "videohide") { HideStage(); return; }
+            if (msg.StartsWith("videofull"))
+            {
+                /* 全屏播放 = 窗口最大化；页面那边同时会把外围 UI 收起来，画面铺满整块客户区。
+                   videofull:1 进全屏 / videofull:0 退出（还原进全屏之前的窗口状态） */
+                string arg = msg.Length > 9 ? msg.Substring(9).TrimStart(':') : "";
+                if (arg == "1") SetFullscreen(true);
+                else if (arg == "0") SetFullscreen(false);
+                else ToggleMax();
+                return;
+            }
+        }
+
+        /* ===================== 内置播放器画面 ===================== */
+        private void EnsureStage()
+        {
+            if (stage != null) return;
+            stage = new Panel();
+            stage.BackColor = Color.Black;
+            stage.Visible = false;
+            this.Controls.Add(stage);
+        }
+
+        /* spec = "左,上,宽,高,缩放"（页面按 CSS 像素给，缩放给 devicePixelRatio，DPI 不是 100% 时才对得上） */
+        private void ShowStage(string spec)
+        {
+            string[] p = spec.Split(',');
+            if (p.Length < 4) return;
+            double x, y, w, h, dpr = 1;
+            if (!double.TryParse(p[0], NumberStyles.Float, CultureInfo.InvariantCulture, out x)) return;
+            if (!double.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out y)) return;
+            if (!double.TryParse(p[2], NumberStyles.Float, CultureInfo.InvariantCulture, out w)) return;
+            if (!double.TryParse(p[3], NumberStyles.Float, CultureInfo.InvariantCulture, out h)) return;
+            if (p.Length >= 5) double.TryParse(p[4], NumberStyles.Float, CultureInfo.InvariantCulture, out dpr);
+            if (dpr < 0.2 || dpr > 8) dpr = 1;
+            if (w < 40 || h < 40) return;
+            EnsureStage();
+            int lw = Math.Max(8, this.ClientSize.Width);
+            int lh = Math.Max(8, this.ClientSize.Height);
+            int cx = (int)Math.Round(x * dpr), cy = (int)Math.Round(y * dpr);
+            int cw = (int)Math.Round(w * dpr), ch = (int)Math.Round(h * dpr);
+            /* 页面往上滚时画面要跟着滚出视野：坐标允许为负，超出客户区的那部分系统会自己裁掉 */
+            if (cw > lw) cw = lw;
+            if (ch > lh) ch = lh;
+            if (cw < 40) cw = 40;
+            if (ch < 40) ch = 40;
+            stage.Bounds = new Rectangle(cx, cy, cw, ch);
+            stageSpec = spec;
+            if (this.WindowState == FormWindowState.Minimized) return;
+            if (!stage.Visible) stage.Visible = true;
+            stage.BringToFront();
+            if (fallbackBar != null && fallbackBar.Visible) fallbackBar.BringToFront();
+            stageShown = true;
+            PostHwnd();
+        }
+
+        private void HideStage()
+        {
+            stageShown = false;
+            if (stage != null && stage.Visible) stage.Visible = false;
+            if (web != null) { try { web.BringToFront(); } catch (Exception) { } }
+        }
+
+        private void PostHwnd()
+        {
+            if (stage == null || web == null || web.CoreWebView2 == null) return;
+            try
+            {
+                web.CoreWebView2.PostWebMessageAsJson(
+                    "{\"t\":\"hwnd\",\"v\":" + stage.Handle.ToInt64().ToString(CultureInfo.InvariantCulture) + "}");
+            }
+            catch (Exception) { }
         }
 
         private async void OnShown(object sender, EventArgs e)
@@ -574,7 +623,10 @@ namespace ZiyuanJuhe
                 web.CoreWebView2.NewWindowRequested += this.OnNewWindow;
                 web.CoreWebView2.ProcessFailed += this.OnWebFailed;
                 web.CoreWebView2.WebMessageReceived += this.OnWebMessage;
-                await web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(INJECT_JS);
+                web.CoreWebView2.NavigationCompleted += delegate(object s2, CoreWebView2NavigationCompletedEventArgs e2)
+                {
+                    if (e2.IsSuccess) { pageReady = true; if (fallbackBar != null) fallbackBar.Visible = false; }
+                };
                 fallbackBar = MakeFallbackBar();
                 this.Controls.Add(fallbackBar);
                 PositionFallbackBar();
@@ -612,6 +664,8 @@ namespace ZiyuanJuhe
         {
             base.OnResize(e);
             PositionFallbackBar();
+            /* 窗口大小变了，页面会重新发一次 video:，这里兜个底，画面不跟着窗口变形 */
+            if (stageShown && stageSpec.Length > 0) ShowStage(stageSpec);
         }
 
         private Panel MakeFallbackBar()

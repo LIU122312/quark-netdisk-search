@@ -202,9 +202,12 @@
   }
 
   function selectCat(cat) {
+    /* 左侧分类=看网盘那条线：从在线模式点回来时先把在线状态收掉 */
+    if (window.QS_MODE === 'online' && window.qsSetMode) window.qsSetMode('pan', false);
     var nav = document.querySelectorAll('#snav a'), k;
     for (k = 0; k < nav.length; k++) nav[k].className = (nav[k].getAttribute('data-nav') === cat ? 'on' : '');
     var list = $('list'); if (list) list.innerHTML = '';
+    if (window.Online) { if (cat === 'online') { window.Online.show(); return; } window.Online.hide(); }
     if (cat === 'home') cat = 'anime';
     renderHome(cat);
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -251,8 +254,11 @@
     var showHome = !hasContent || hasWelcome;
     HOME.hidden = !showHome;
     document.body.classList.toggle('home-on', showHome);
+    if (window.Online && hasContent && !hasWelcome) window.Online.hide();
   }
   if (list) new MutationObserver(sync).observe(list, { childList: true });
+  /* 切「网盘 / 在线」时外面要手动叫一次：#list 本来就是空的时候 observer 不会触发 */
+  window.qsSyncHome = sync;
   sync();
 
   var rt = null;

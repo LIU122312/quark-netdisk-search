@@ -40,6 +40,7 @@ const TV_BGM_R = ['日本', '美国', '中国', '韩国', '英国'];
 const TV_BGM_G = ['剧情', '科幻', '悬疑', '动作', '喜剧', '爱情', '犯罪', '奇幻', '历史', '战争', '家庭', '古装'];
 
 const BGM_TIP = '名次为 Bangumi 全站排名；题材多选为「同时满足」';
+const BGM_ANIME_TIP = 'Bangumi 全站排名；需要能连上 api.bgm.tv —— 多数国内直连网络连不上，动漫建议直接用「豆瓣」或「豆瓣榜单」';
 const DB_TIP = '按豆瓣评分排序；题材多选为「同时满足」';
 /* 网文：豆瓣图书「网络小说」系标签 + Bangumi 书籍 */
 const WEB_G = ['网络小说', '玄幻', '仙侠', '言情', '都市', '武侠', '轻小说', '奇幻', '科幻'];
@@ -67,8 +68,9 @@ const LIT_DEFAULT_TAGS = ['小说', '经典', '中国文学', '外国文学', '�
 const COMIC_DEFAULT_TAGS = ['漫画', '绘本', '画集', '日本漫画'];
 const SRC_DEF = {
   anime: [
-    { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [{ n: '国漫', t: '中国' }, { n: '日漫', t: '日本' }, { n: '欧美', t: '美国' }], genres: ['热血', '科幻', '奇幻', '恋爱', '日常', '搞笑', '治愈', '悬疑', '校园', '机战', '运动', '音乐', '历史'], kind: 'bgmAnime' },
-    { id: 'db', name: '豆瓣', tip: '按豆瓣评分排序；取自豆瓣 7 分以上动画库', regions: ['中国大陆', '日本', '美国', '欧美', '韩国'], genres: ['剧情', '冒险', '奇幻', '喜剧', '动作', '科幻', '家庭', '爱情', '悬疑', '音乐', '歌舞', '惊悚', '犯罪', '战争', '儿童', '历史'], kind: 'dbAnime' },
+    { id: 'db', name: '豆瓣', tip: '国内可直连；按豆瓣评分排序，取自豆瓣 7 分以上动画库', regions: ['中国大陆', '日本', '美国', '欧美', '韩国'], genres: ['剧情', '冒险', '奇幻', '喜剧', '动作', '科幻', '家庭', '爱情', '悬疑', '音乐', '歌舞', '惊悚', '犯罪', '战争', '儿童', '历史'], kind: 'dbAnime' },
+    { id: 'bgm', name: 'Bangumi', tip: BGM_ANIME_TIP, regions: [{ n: '国漫', t: '中国' }, { n: '日漫', t: '日本' }, { n: '欧美', t: '美国' }], genres: ['热血', '科幻', '奇幻', '恋爱', '日常', '搞笑', '治愈', '悬疑', '校园', '机战', '运动', '音乐', '历史'], kind: 'bgmAnime' },
+    { id: 'board', name: '豆瓣榜单', tip: '高分榜 / 产地榜 / 近期热门', kind: 'board' },
   ],
   movie: [
     { id: 'db', name: '豆瓣', tip: DB_TIP, regions: MOVIE_DB_R, genres: MOVIE_DB_G, kind: 'dbRec', type: 'movie' },
@@ -112,11 +114,20 @@ const SRC_DEF = {
     { id: 'bgm', name: 'Bangumi', tip: BGM_TIP, regions: [], genres: GAME_BGM_G, kind: 'bgmType', typeId: 4 },
   ],
 };
-const CAT_SRC = { anime: 'bgm', movie: 'db', tv: 'db', webfiction: 'qidian', litfic: 'db', comic: 'db', music: 'netease', game: 'steam' };
+const CAT_SRC = { anime: 'db', movie: 'db', tv: 'db', webfiction: 'qidian', litfic: 'db', comic: 'db', music: 'netease', game: 'steam' };
 const WEST = ['美国', '英国', '法国', '德国', '意大利', '西班牙', '加拿大', '澳大利亚', '新西兰', '爱尔兰', '瑞典', '丹麦', '挪威', '芬兰', '荷兰', '比利时', '奥地利', '瑞士', '俄罗斯', '波兰', '捷克', '冰岛', '墨西哥', '巴西', '阿根廷', '南非'];
 
 /* ============ 电影/剧集：豆瓣固定榜单 ============ */
 const BOARDS = {
+  anime: [
+    { group: '高分榜', id: 'db_anime_9', name: '9 分以上', kind: 'dbAnimeChart', minScore: 9, desc: '豆瓣评分 9.0 以上，按评分从高到低', ttl: TTL_DB },
+    { group: '高分榜', id: 'db_anime_8', name: '8 分以上', kind: 'dbAnimeChart', minScore: 8, desc: '豆瓣评分 8.0 以上，按评分从高到低', ttl: TTL_DB },
+    { group: '高分榜', id: 'db_anime_75', name: '7.5 分以上', kind: 'dbAnimeChart', minScore: 7.5, desc: '豆瓣评分 7.5 以上，按评分从高到低', ttl: TTL_DB },
+    { group: '产地榜', id: 'db_anime_jp', name: '日本动画', kind: 'dbAnimeChart', region: '日本', desc: '产地日本，按豆瓣评分从高到低', ttl: TTL_DB },
+    { group: '产地榜', id: 'db_anime_cn', name: '国产动画', kind: 'dbAnimeChart', region: '中国大陆', desc: '产地中国大陆，按豆瓣评分从高到低', ttl: TTL_DB },
+    { group: '产地榜', id: 'db_anime_us', name: '欧美动画', kind: 'dbAnimeChart', region: '欧美', desc: '产地欧美，按豆瓣评分从高到低', ttl: TTL_DB },
+    { group: '热门', id: 'db_anime_hot', name: '近期热门', kind: 'douban', slug: 'tv_animation', desc: '豆瓣「近期热门动画」，带评分', ttl: TTL_DB },
+  ],
   movie: [
     { group: '榜单', id: 'db_top250', name: 'Top250', kind: 'douban', slug: 'movie_top250', ttl: 24 * 3600e3 },
     { group: '榜单', id: 'db_weekly', name: '一周口碑榜', kind: 'douban', slug: 'movie_weekly_best', ttl: 3 * 3600e3 },
@@ -427,6 +438,23 @@ async function buildDbAnimePool() {
   const items = [...map.values()];
   if (!items.length) throw new Error('豆瓣 chart 未返回数据');
   return { items, via };
+}
+
+/* ---------- 抓取：豆瓣动画榜单（复用动画池，按分/产地过滤后按评分排序） ---------- */
+async function fetchDbAnimeBoard(board, start, limit) {
+  const pool = await getDbPool();
+  const want = board.region || '';
+  const items = pool.items.filter((it) => {
+    if (board.minScore) return it.score >= board.minScore;
+    if (!want) return true;
+    if (want === '欧美') return (it.regions || []).some((x) => WEST.indexOf(x) >= 0);
+    return (it.regions || []).indexOf(want) >= 0;
+  }).map((it) => Object.assign({}, it));
+  items.sort((a, b) => (b.score - a.score) || ((b.votes || 0) - (a.votes || 0)));
+  items.forEach((it, i) => { it.rank = i + 1; });
+  const slice = items.slice(start, start + limit);
+  if (!items.length) throw new Error('豆瓣动画库没有匹配条目');
+  return { items: slice, total: items.length, via: pool.via, hasMore: start + slice.length < items.length };
 }
 
 /* ---------- 抓取：豆瓣 recommend（tags 组合筛选，count 上限 100） ---------- */
@@ -743,7 +771,7 @@ async function getDbPool() {
 
 /* legacy shim: getAnime(srcId, regions, ...) => getFiltered(anime, ...) */
 async function getAnime(srcId, regions, genres, page, limit, refresh) {
-  return getFiltered('anime', srcId || 'bgm', regions || [], genres || [], page, limit, refresh);
+  return getFiltered('anime', srcId || 'db', regions || [], genres || [], page, limit, refresh);
 }
 
 /* ===================== 统一筛选器 ===================== */
@@ -905,6 +933,7 @@ async function getRank(cat, boardId, page, limit, refresh) {
       else if (board.kind === 'steam250') r = await fetchSteam250(board.slug, off, fetchLim);
       else if (board.kind === 'taptap') r = await fetchTaptap(board.typeName, board.platform, off, fetchLim);
       else if (board.kind === 'qidian') r = await fetchQidian(board.type, board.gender, off, fetchLim);
+      else if (board.kind === 'dbAnimeChart') r = await fetchDbAnimeBoard(board, off, fetchLim);
       else r = await fetchDouban(board, off, fetchLim);
       const out = {
         cat, catName: CAT_NAME[cat] || cat, board: board.id, boardName: board.name,
